@@ -1,4 +1,6 @@
-exports.home = (req, res) => res.render('home');
+exports.home = (req, res) => {
+  res.render('home', { user: req.session.user || null });
+};
 exports.loginPage = (req, res) => {
   if (req.session.user) return res.redirect('/chat');
   res.render('login');

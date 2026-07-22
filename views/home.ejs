@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campusfify · Culture & Heritage</title>
     
-    <!-- No-cache headers to prevent back button access -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     
     <style>
-        /* ----- BYJU’S inspired color palette ----- */
+        /* … (all CSS exactly as you had it – I’ll keep it identical) … */
         :root {
             --cf-white: #ffffff;
             --cf-off-white: #f8f9fc;
@@ -519,7 +518,6 @@
             justify-content: center;
         }
 
-        /* ----- Confetti Canvas ----- */
         #confettiCanvas {
             position: fixed;
             top: 0;
@@ -534,7 +532,6 @@
             display: block;
         }
 
-        /* ----- Responsive ----- */
         @media (max-width: 768px) {
             .cf-header-inner {
                 flex-wrap: nowrap;
@@ -650,7 +647,6 @@
     </style>
 </head>
 <body>
-    <!-- ====== HEADER ====== -->
     <header class="cf-header" role="banner" aria-label="Main navigation">
         <div class="cf-container cf-header-inner">
             <a href="/" class="cf-logo" aria-label="Campusfify home">
@@ -670,7 +666,6 @@
         </div>
     </header>
 
-    <!-- ====== HERO ====== -->
     <section class="cf-hero" aria-labelledby="hero-title">
         <div class="cf-container cf-hero-content">
             <h1 id="hero-title">Explore Culture & Heritage</h1>
@@ -678,7 +673,6 @@
         </div>
     </section>
 
-    <!-- ====== QUIZ SECTION ====== -->
     <section class="cf-quiz" id="quiz" aria-labelledby="quiz-title">
         <div class="cf-container">
             <h2 id="quiz-title" class="cf-text-center">📚 Culture & Heritage Quiz</h2>
@@ -689,7 +683,6 @@
         </div>
     </section>
 
-    <!-- ====== CONTACT SECTION ====== -->
     <section id="contact" class="cf-quiz" style="background: var(--cf-off-white); padding: 3rem 0 4rem;">
         <div class="cf-container">
             <h2 class="cf-text-center" style="font-size: 2.2rem; font-weight: 700; color: var(--cf-orange-600); margin-bottom: 0.4rem;">📞 Contact Us</h2>
@@ -702,10 +695,8 @@
         </div>
     </section>
 
-    <!-- ====== CONFETTI CANVAS ====== -->
     <canvas id="confettiCanvas"></canvas>
 
-    <!-- ====== FOOTER ====== -->
     <footer class="cf-footer" role="contentinfo">
         <div class="cf-container cf-footer-inner">
             <div class="cf-footer-brand">
@@ -723,6 +714,11 @@
             </div>
         </div>
     </footer>
+
+    <!-- ====== SERVER‑SIDE LOGIN STATE ====== -->
+    <script>
+        window.isLoggedIn = <%= user ? 'true' : 'false' %>;
+    </script>
 
     <script>
         (function() {
@@ -744,18 +740,11 @@
             document.querySelectorAll('.cf-contact-link, .cf-btn--contact').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    
-                    fetch('/messages', {
-                        credentials: 'include'
-                    }).then(function(response) {
-                        if (response.status === 401) {
-                            window.location.href = '/login';
-                        } else {
-                            window.location.href = '/chat';
-                        }
-                    }).catch(function() {
+                    if (window.isLoggedIn) {
+                        window.location.href = '/chat';
+                    } else {
                         window.location.href = '/login';
-                    });
+                    }
                 });
             });
 
@@ -875,7 +864,6 @@
 
             const quizInner = document.getElementById('quizInner');
 
-            // ----- Fetch questions from database API -----
             async function fetchRandomQuestions(count) {
                 try {
                     const response = await fetch('/api/questions/random?count=' + count);
