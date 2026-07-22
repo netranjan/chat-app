@@ -6,25 +6,31 @@ const { connectDB } = require('../services/database.service');
 const pagesRoutes = require('../routes/pages');
 const apiRoutes = require('../routes/api');
 
-const app = express();
+let app;
 
-// Connect to DB, then configure app
-const start = async () => {
+// Create the Express app once and export it as a handler
+async function initialize() {
+  // Only initialise once
+  if (app) return app;
+
+  app = express();
+
+  // Connect to MongoDB
   await connectDB();
+
+  // Configure Express
   configureExpress(app);
   app.use(sessionMiddleware);
 
+  // Routes
   app.use('/', pagesRoutes);
   app.use('/', apiRoutes);
 
-  // For local development, listen on a port
-  if (process.env.NODE_ENV !== 'production') {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  }
-
   return app;
-};
+}
 
-// Vercel will await this exported function
-module.exports = start();
+// Vercel expects an async function that returns the app
+module.exports = async (req, res) => {
+  const expressApp = await initialize();
+  return expressApp(req, res);
+};
