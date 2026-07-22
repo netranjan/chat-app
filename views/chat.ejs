@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Campusfify Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/chat.css">
+</head>
+<body>
+  <header class="chat-header">
+    <div class="header-left">
+      <a href="/" class="back-btn" title="Home">←</a>
+      <div class="avatar" style="background: linear-gradient(135deg, #e91e63, #c2185b);">
+        <% if (user.id === 1) { %>R<% } else { %>M<% } %>
+      </div>
+      <div class="chat-info">
+        <div class="chat-name">
+          <% if (user.id === 1) { %>Chat with Manu<% } else { %>Chat with Rasuv<% } %>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <% if (user.id === 1) { %>
+        <button id="dashboardToggle" class="header-btn btn-dashboard">📊 Dashboard</button>
+        <button id="clearChatBtn" class="header-btn btn-clear"><span>🗑️</span> Clear</button>
+      <% } %>
+      <a href="/logout" class="header-btn btn-logout"><span>🚪</span> Logout</a>
+    </div>
+  </header>
+
+  <div class="chat-messages-container" id="messagesContainer"></div>
+
+  <button id="newMessagesBtn" class="new-messages-btn" style="display:none;">
+    ↓ <span id="newMsgCount">0</span> new message(s)
+  </button>
+
+  <div class="typing-indicator" id="typingIndicator" style="display:none">
+    <div class="typing-dots">
+      <span></span><span></span><span></span>
+    </div>
+    <span class="typing-text" id="typingText">manu is typing…</span>
+  </div>
+
+  <div class="reply-input-area" id="replyPreview" style="display:none">
+    <div class="reply-quote" id="replyText"></div>
+    <button type="button" class="cancel-reply" id="cancelReply">×</button>
+  </div>
+
+  <form id="messageForm" class="chat-input-area">
+    <div class="input-wrapper">
+      <button type="button" class="emoji-btn" id="emojiBtn">😊</button>
+      <textarea id="messageInput" placeholder="Type a message..." rows="1"></textarea>
+    </div>
+    <button type="submit" class="send-btn" id="sendBtn">Send</button>
+  </form>
+
+  <% if (user.id === 1) { %>
+    <div class="dashboard-modal" id="dashboardModal" style="display:none;">
+      <div class="dashboard-content">
+        <span class="close-dashboard" id="closeDashboard">&times;</span>
+        <h2>Admin Dashboard</h2>
+        <div id="dashboardData">Loading...</div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- viewport height fix for mobile (so input is never hidden) -->
+  <script>
+    function setViewportHeight() {
+      document.body.style.height = window.innerHeight + 'px';
+    }
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', setViewportHeight);
+    setViewportHeight();
+  </script>
+
+  <script>
+    window.USER = <%- JSON.stringify(user) %>;
+  </script>
+  <script src="/js/chat.js"></script>
+  <% if (user.id === 1) { %>
+    <script src="/js/dashboard.js"></script>
+  <% } %>
+</body>
+</html>
