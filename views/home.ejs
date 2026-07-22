@@ -11,39 +11,48 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg: #fef7f2;
+            --bg: #fafbff;
             --card-bg: #ffffff;
-            --text: #2d2b4e;
-            --text-light: #5e5a7a;
-            --peach: #ff9a8c;
-            --peach-hover: #ff7f6e;
-            --lavender: #b4a5f5;
-            --mint: #6fcf97;
-            --yellow: #ffd166;
-            --shadow-soft: 0 10px 30px rgba(0,0,0,0.05);
-            --shadow-hover: 0 16px 48px rgba(0,0,0,0.1);
-            --radius-xl: 32px;
-            --radius-lg: 24px;
-            --radius-md: 16px;
-            --radius-btn: 50px;
-            --transition: 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-            --font: 'Nunito', system-ui, -apple-system, sans-serif;
+            --text: #1e293b;
+            --text-light: #475569;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --accent: #f59e0b;
+            --green: #10b981;
+            --red: #ef4444;
+            --shadow: 0 4px 20px rgba(0,0,0,0.05);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --radius-sm: 12px;
+            --radius-btn: 12px;
+            --transition: 0.2s ease-in-out;
+            --font: 'Inter', system-ui, -apple-system, sans-serif;
+            
+            /* Quiz specific */
+            --option-bg: #f1f5f9;
+            --option-border: transparent;
+            --feedback-bg: #f1f5f9;
         }
 
         body.dark {
-            --bg: #1a1a2e;
-            --card-bg: #252541;
-            --text: #eaeaea;
-            --text-light: #b0b0c8;
-            --peach: #ff7f6e;
-            --lavender: #a78bfa;
-            --mint: #6ee7b7;
-            --shadow-soft: 0 10px 30px rgba(0,0,0,0.3);
-            --shadow-hover: 0 16px 48px rgba(0,0,0,0.5);
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f1f5f9;
+            --text-light: #94a3b8;
+            --primary: #818cf8;
+            --primary-hover: #6366f1;
+            --accent: #fbbf24;
+            --green: #34d399;
+            --red: #f87171;
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+            --option-bg: #334155;
+            --option-border: transparent;
+            --feedback-bg: #334155;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -55,196 +64,186 @@
             line-height: 1.6;
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
             transition: background 0.3s, color 0.3s;
         }
 
-        .bg-animation {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none;
-        }
-        .bg-animation span {
-            position: absolute; display: block;
-            border-radius: 50%; opacity: 0.15;
-            animation: float 25s infinite ease-in-out;
-        }
-        .bg-animation span:nth-child(1) { left: 10%; top: 20%; width: 80px; height: 80px; background: var(--peach); animation-delay: 0s; }
-        .bg-animation span:nth-child(2) { left: 75%; top: 65%; width: 100px; height: 100px; background: var(--lavender); animation-delay: -7s; }
-        .bg-animation span:nth-child(3) { left: 35%; top: 85%; width: 60px; height: 60px; background: var(--mint); animation-delay: -14s; }
-        .bg-animation span:nth-child(4) { left: 85%; top: 15%; width: 70px; height: 70px; background: var(--yellow); animation-delay: -20s; }
-        @keyframes float {
-            0% { transform: translateY(0) rotate(0deg) scale(1); }
-            50% { transform: translateY(-40px) rotate(180deg) scale(1.1); }
-            100% { transform: translateY(0) rotate(360deg) scale(1); }
-        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 
-        .cf-container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
-        .cf-text-center { text-align: center; }
-
-        .cf-btn {
+        /* Buttons */
+        .btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            background: var(--peach); color: #fff;
-            font-weight: 700; font-size: 1rem; padding: 0.85rem 2rem;
+            background: var(--primary); color: #fff;
+            font-weight: 600; font-size: 0.95rem; padding: 0.75rem 1.8rem;
             border: none; border-radius: var(--radius-btn); cursor: pointer;
             text-decoration: none; transition: all var(--transition);
-            min-height: 48px; white-space: nowrap;
-            box-shadow: 0 6px 20px rgba(255,154,140,0.3);
+            white-space: nowrap; box-shadow: 0 4px 12px rgba(99,102,241,0.3);
         }
-        .cf-btn:hover { background: var(--peach-hover); transform: translateY(-3px); box-shadow: 0 12px 30px rgba(255,154,140,0.4); }
-        .cf-btn:active { transform: scale(0.96); }
-        .cf-btn--outline { background: transparent; color: var(--peach); box-shadow: 0 0 0 2px var(--peach); }
-        .cf-btn--outline:hover { background: rgba(255,154,140,0.08); }
-        .cf-btn--blue { background: var(--lavender); box-shadow: 0 6px 20px rgba(180,165,245,0.3); }
-        .cf-btn--blue:hover { background: #9f8ce8; }
-        .cf-btn--contact {
-            background: var(--mint);
-            box-shadow: 0 6px 20px rgba(111,207,151,0.3);
-            padding: 0.5rem 1.4rem;
+        .btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99,102,241,0.4); }
+        .btn:active { transform: scale(0.97); }
+        .btn--outline { background: transparent; color: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+        .btn--outline:hover { background: rgba(99,102,241,0.08); }
+        .btn--sm { padding: 0.5rem 1.2rem; font-size: 0.85rem; }
+        .btn--contact {
+            background: var(--green); color: #fff;
+            box-shadow: 0 4px 12px rgba(16,185,129,0.3);
         }
-        .cf-btn--contact:hover { background: #5cb882; }
-        .cf-btn--small { padding: 0.5rem 1.2rem; font-size: 0.9rem; }
+        .btn--contact:hover { background: #059669; }
 
-        .cf-header {
+        /* Header */
+        .header {
             position: sticky; top: 0; z-index: 100;
-            background: rgba(255,255,255,0.82); backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(0,0,0,0.03);
-            padding: 0.6rem 0;
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            padding: 0.8rem 0;
             transition: background 0.3s;
         }
-        body.dark .cf-header { background: rgba(37,37,65,0.85); }
-        .cf-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-        .cf-logo {
-            font-weight: 800; font-size: 1.7rem;
-            background: linear-gradient(135deg, #ff9a8c, #b4a5f5);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            text-decoration: none;
+        body.dark .header { background: rgba(15,23,42,0.85); border-color: rgba(255,255,255,0.05); }
+        .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .logo {
+            font-weight: 800; font-size: 1.6rem; color: var(--primary);
+            text-decoration: none; letter-spacing: -0.5px;
         }
-        .cf-nav { display: flex; align-items: center; gap: 1.5rem; font-weight: 600; flex-wrap: wrap; }
-        .cf-nav a {
-            color: var(--text-light); text-decoration: none; padding: 0.4rem 0;
-            border-bottom: 3px solid transparent; transition: all var(--transition);
+        .nav { display: flex; align-items: center; gap: 1.8rem; font-weight: 500; }
+        .nav a {
+            color: var(--text-light); text-decoration: none; padding: 0.3rem 0;
+            border-bottom: 2px solid transparent; transition: all var(--transition);
         }
-        .cf-nav a:hover, .cf-nav a.cf-active-link { color: var(--peach); border-bottom-color: var(--peach); }
-        .cf-contact-link {
-            font-weight: 700; color: #fff !important; padding: 0.5rem 1.5rem;
-            border-radius: 40px; background: linear-gradient(135deg, #ff9a8c, #ff7f6e);
-            box-shadow: 0 4px 12px rgba(255, 154, 140, 0.3);
-            transition: all 0.2s;
+        .nav a:hover, .nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .nav .contact-link {
+            background: var(--green); color: #fff !important;
+            padding: 0.5rem 1.5rem; border-radius: 40px; border-bottom: none;
         }
-        .cf-contact-link:hover { background: linear-gradient(135deg, #ff7f6e, #ff6b58); transform: translateY(-2px); }
-        .dark-mode-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; padding: 0.3rem; }
+        .nav .contact-link:hover { background: #059669; }
+        .dark-toggle { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text); }
 
-        .cf-hero { padding: 4rem 0 3rem; text-align: center; }
-        .cf-hero h1 {
+        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
+        .hamburger span { width: 24px; height: 3px; background: var(--text); border-radius: 2px; transition: 0.2s; }
+
+        /* Hero */
+        .hero { padding: 4rem 0 3rem; text-align: center; }
+        .hero h1 {
             font-size: clamp(2.4rem, 8vw, 4rem); font-weight: 800;
-            background: linear-gradient(135deg, #ff7f6e, #b4a5f5);
+            background: linear-gradient(135deg, #6366f1, #a78bfa);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem;
         }
-        .cf-hero p { font-size: 1.15rem; color: var(--text-light); max-width: 550px; margin: 0 auto; }
+        .hero p { font-size: 1.15rem; color: var(--text-light); max-width: 550px; margin: 0 auto; }
 
-        .daily-tip { padding: 1rem 0; }
-        .tip-card {
-            background: var(--card-bg); border-radius: var(--radius-lg);
-            padding: 1.8rem 2rem; box-shadow: var(--shadow-soft);
-            max-width: 700px; margin: 0 auto; display: flex; align-items: center; gap: 1rem;
-            border-left: 8px solid var(--peach); transition: all 0.3s;
-        }
-        .tip-card .tip-icon { font-size: 2.2rem; }
-        .tip-content { flex: 1; }
-        .tip-text { font-size: 1.1rem; font-weight: 600; color: var(--text); min-height: 3rem; }
-        .tip-category { font-size: 0.8rem; background: #fff0eb; color: var(--peach); padding: 0.2rem 1rem; border-radius: 40px; display: inline-block; margin-top: 0.5rem; text-transform: uppercase; font-weight: 700; }
-
-        .slide-left, .slide-right, .fade-up {
-            opacity: 0; transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .slide-left { transform: translateX(-40px); }
-        .slide-right { transform: translateX(40px); }
-        .fade-up { transform: translateY(40px); }
-        .slide-left.visible, .slide-right.visible, .fade-up.visible {
-            opacity: 1; transform: translate(0);
-        }
-
-        .study-section {
-            background: var(--card-bg); border-radius: var(--radius-xl);
-            padding: 2rem; margin: 2rem auto; max-width: 800px;
-            box-shadow: var(--shadow-soft); transition: all 0.3s;
-        }
-        .study-section h3 { font-size: 1.6rem; font-weight: 800; margin-bottom: 1rem; }
-        .study-section p, .study-section li { color: var(--text-light); }
-        .study-card-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;
-        }
-        .study-card {
-            background: linear-gradient(135deg, #faf9ff, #f0edff);
-            border-radius: var(--radius-md); padding: 1.5rem; text-align: center;
-            font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        /* Cards */
+        .section { padding: 2rem 0; }
+        .card {
+            background: var(--card-bg); border-radius: var(--radius);
+            padding: 2rem; box-shadow: var(--shadow);
             transition: transform 0.3s, box-shadow 0.3s;
         }
-        .study-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-hover); }
-        .study-card span { font-size: 2.2rem; display: block; margin-bottom: 0.5rem; }
+        .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+        .card h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.8rem; }
 
-        .cf-quiz { padding: 2rem 0; }
-        .cf-quiz h2 { font-size: 2.2rem; font-weight: 800; margin-bottom: 0.3rem; }
-        .cf-quiz-sub { color: var(--text-light); margin-bottom: 2rem; }
-        .cf-quiz-card {
-            max-width: 800px; margin: 0 auto;
-            background: var(--card-bg); border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-soft); padding: 2.2rem 2rem; transition: box-shadow 0.3s;
+        /* Tip card */
+        .tip-card {
+            border-left: 6px solid var(--primary);
+            display: flex; align-items: center; gap: 1.2rem;
         }
-        .cf-quiz-card:hover { box-shadow: var(--shadow-hover); }
-        .cf-quiz-progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; font-weight: 600; color: var(--text-light); flex-wrap: wrap; gap: 0.5rem; }
-        .cf-badge { background: #fff0eb; color: #ff7f6e; padding: 0.25rem 1rem; border-radius: 40px; font-size: 0.8rem; font-weight: 700; }
-        .cf-xp-badge { background: #e4dffc; color: #7c6fe0; padding: 0.25rem 1rem; border-radius: 40px; font-size: 0.8rem; font-weight: 700; }
-        .cf-progress-bar { width: 100%; height: 6px; background: #f0eef7; border-radius: 10px; margin: 0.8rem 0 1.2rem; overflow: hidden; }
-        .cf-progress-fill { height: 100%; background: linear-gradient(90deg, #ff9a8c, #b4a5f5); border-radius: 10px; transition: width 0.3s; }
-        .cf-question-text { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.8rem; }
-        .cf-options { display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1.2rem; }
-        .cf-option {
-            display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem;
-            background: #faf9ff; border-radius: 100px; border: 2px solid transparent;
-            cursor: pointer; transition: all 0.3s; font-size: 1rem; user-select: none;
+        .tip-icon { font-size: 2.2rem; }
+        .tip-text { font-weight: 600; color: var(--text); min-height: 3rem; }
+        .tip-category {
+            font-size: 0.75rem; background: #ede9fe; color: var(--primary);
+            padding: 0.2rem 1rem; border-radius: 20px; display: inline-block;
+            text-transform: uppercase; font-weight: 600; margin-top: 0.4rem;
         }
-        .cf-option:hover:not(.cf-disabled) { background: #f0edff; border-color: var(--lavender); transform: translateX(4px); }
-        .cf-option input[type="radio"] { appearance: none; width: 22px; height: 22px; border: 2px solid #d4d0e8; border-radius: 50%; flex-shrink: 0; cursor: pointer; transition: 0.2s; }
-        .cf-option input[type="radio"]:checked { border-color: var(--lavender); background: var(--lavender); }
-        .cf-option label { flex: 1; cursor: pointer; font-weight: 600; }
-        .cf-option.cf-correct { background: #e6ffee; border-color: #6fcf97; }
-        .cf-option.cf-wrong { background: #ffeaea; border-color: #ff7f6e; }
-        .cf-option.cf-disabled { pointer-events: none; opacity: 0.8; }
-        .cf-quiz-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.8rem; }
-        .cf-feedback { font-weight: 600; padding: 0.6rem 1.4rem; border-radius: 40px; background: #f0eef7; color: var(--text-light); flex: 1; min-width: 150px; }
-        .cf-feedback.cf-correct-text { background: #e6ffee; color: #1e7b4b; }
-        .cf-feedback.cf-wrong-text { background: #ffeaea; color: #c0392b; }
-        .cf-quiz-result { text-align: center; padding: 1.6rem 0; }
-        .cf-quiz-result h3 { font-size: 2rem; color: var(--peach); }
-        .cf-streak-fire { font-size: 1.3rem; color: #ff6f00; margin-left: 0.4rem; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+        body.dark .tip-category { background: #312e81; color: #a5b4fc; }
 
-        .vocab-box, .streak-box, .quote-box {
-            background: var(--card-bg); border-radius: var(--radius-lg);
-            padding: 1.5rem; margin: 1.5rem auto; max-width: 700px;
-            box-shadow: var(--shadow-soft); display: flex; align-items: center; gap: 1rem;
+        /* Quiz */
+        .quiz-card { max-width: 800px; margin: 0 auto; }
+        .quiz-progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-weight: 600; color: var(--text-light); flex-wrap: wrap; gap: 0.5rem; }
+        .badge {
+            background: #ede9fe; color: var(--primary); padding: 0.25rem 0.8rem; border-radius: 20px;
+            font-size: 0.8rem; font-weight: 700;
         }
-        .vocab-box .word { font-size: 1.8rem; font-weight: 800; color: var(--peach); }
-        .vocab-box .def { color: var(--text-light); }
+        .xp-badge { background: #dbeafe; color: #2563eb; }
+        body.dark .badge { background: #312e81; color: #a5b4fc; }
+        body.dark .xp-badge { background: #1e3a5f; color: #93c5fd; }
+        .progress-bar { width: 100%; height: 6px; background: #e2e8f0; border-radius: 10px; margin: 0.8rem 0 1.2rem; overflow: hidden; }
+        body.dark .progress-bar { background: #334155; }
+        .progress-fill { height: 100%; background: var(--primary); border-radius: 10px; transition: width 0.3s; }
+        .question-text { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem; }
+        .options { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1rem; }
+        .option {
+            display: flex; align-items: center; gap: 0.8rem; padding: 1rem 1.2rem;
+            background: var(--option-bg); border-radius: var(--radius-sm);
+            border: 2px solid transparent;
+            cursor: pointer; transition: all var(--transition); font-size: 1rem; user-select: none;
+        }
+        .option:hover:not(.disabled) { border-color: var(--primary); background: var(--card-bg); }
+        .option input[type="radio"] { display: none; }
+        .option .circle {
+            width: 20px; height: 20px; border-radius: 50%; border: 2px solid #cbd5e1;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        body.dark .option .circle { border-color: #64748b; }
+        .option.selected .circle { border-color: var(--primary); background: var(--primary); }
+        .option.selected .circle::after { content: ''; width: 8px; height: 8px; background: #fff; border-radius: 50%; }
+        .option label { flex: 1; font-weight: 500; cursor: pointer; color: var(--text); }
+        .option.correct { background: #d1fae5; border-color: var(--green); }
+        .option.wrong { background: #fee2e2; border-color: var(--red); }
+        body.dark .option.correct { background: #064e3b; }
+        body.dark .option.wrong { background: #7f1d1d; }
+        .option.disabled { pointer-events: none; opacity: 0.7; }
+        .quiz-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.8rem; }
+        .feedback { font-weight: 500; padding: 0.5rem 1rem; border-radius: var(--radius-sm); background: var(--feedback-bg); color: var(--text-light); flex: 1; }
+        .feedback.correct { background: #d1fae5; color: #065f46; }
+        .feedback.wrong { background: #fee2e2; color: #991b1b; }
+        body.dark .feedback.correct { background: #064e3b; color: #a7f3d0; }
+        body.dark .feedback.wrong { background: #7f1d1d; color: #fecaca; }
+
+        .quiz-result { text-align: center; padding: 2rem 0; }
+        .quiz-result h3 { font-size: 1.8rem; color: var(--primary); }
+        .streak-fire { font-size: 1.2rem; color: var(--accent); margin-left: 0.3rem; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        /* Mini cards (vocab, streak, quote) */
+        .mini-card {
+            background: var(--card-bg); border-radius: var(--radius); padding: 1.5rem;
+            box-shadow: var(--shadow); margin: 1.5rem auto; max-width: 700px;
+            display: flex; align-items: center; gap: 1rem;
+        }
+        .mini-card .word { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
+        .mini-card .def { color: var(--text-light); }
         .streak-box { justify-content: center; flex-wrap: wrap; }
-        .streak-day { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+        .streak-day { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
         .streak-day span { font-size: 1.4rem; }
         .streak-day small { font-size: 0.8rem; color: var(--text-light); }
-        .quote-box { font-style: italic; color: var(--text-light); text-align: center; display: block; }
+        .quote-box { display: block; text-align: center; font-style: italic; color: var(--text-light); padding: 1.5rem; }
         .quote-box p { font-size: 1.2rem; }
         .quote-box small { display: block; margin-top: 0.5rem; }
 
+        /* Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+        .grid-item {
+            background: var(--card-bg); border-radius: var(--radius); padding: 1.5rem;
+            text-align: center; font-weight: 600; box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s; color: var(--text);
+        }
+        .grid-item:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+        .grid-item span { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+
+        /* Contact */
         #contact { text-align: center; padding: 3rem 0; }
-        .contact-card { background: var(--card-bg); border-radius: var(--radius-lg); padding: 2rem; max-width: 500px; margin: 0 auto; box-shadow: var(--shadow-soft); }
-        .cf-footer { background: var(--text); color: rgba(255,255,255,0.8); padding: 2rem 0; text-align: center; }
+        .contact-card { background: var(--card-bg); border-radius: var(--radius); padding: 2rem; max-width: 500px; margin: 0 auto; box-shadow: var(--shadow); }
+        .contact-card a { color: var(--primary); font-weight: 600; text-decoration: none; }
+
+        footer { text-align: center; padding: 2rem; color: var(--text-light); background: var(--card-bg); margin-top: 2rem; }
+
+        /* Scroll animations */
+        .fade-up { opacity: 0; transform: translateY(30px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        .fade-up.visible { opacity: 1; transform: translateY(0); }
 
         @media (max-width: 768px) {
-            .cf-nav { flex-direction: column; align-items: flex-start; background: var(--card-bg); padding: 1rem; border-radius: var(--radius-md); position: absolute; top: 70px; right: 20px; display: none; }
-            .cf-nav.open { display: flex; }
-            .cf-hamburger { display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
-            .cf-hamburger span { width: 26px; height: 3px; background: var(--text); }
-            .cf-header-inner { position: relative; }
+            .nav { display: none; flex-direction: column; position: absolute; top: 70px; right: 20px;
+                   background: var(--card-bg); padding: 1rem; border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); }
+            .nav.open { display: flex; }
+            .hamburger { display: flex; }
+            .hero h1 { font-size: 2rem; }
         }
 
         #confettiCanvas { position: fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:9999; display:none; }
@@ -252,108 +251,114 @@
     </style>
 </head>
 <body>
-    <div class="bg-animation"><span></span><span></span><span></span><span></span></div>
-
-    <header class="cf-header">
-        <div class="cf-container cf-header-inner">
-            <a href="/" class="cf-logo">📚 LitMaster</a>
-            <button class="cf-hamburger" id="hamburgerBtn">☰</button>
-            <nav class="cf-nav" id="navMenu">
-                <a href="#quiz" data-section="quiz">✨ Quiz</a>
-                <a href="#grammar" data-section="grammar">📖 Grammar</a>
-                <a href="#writing" data-section="writing">📝 Writing</a>
-                <a href="#resources" data-section="resources">📚 Resources</a>
-                <a href="#contact" class="cf-contact-link">📞 Contact Us</a>
+    <div class="header">
+        <div class="container header-inner">
+            <a href="/" class="logo">📚 LitMaster</a>
+            <button class="hamburger" id="hamburgerBtn"><span></span><span></span><span></span></button>
+            <nav class="nav" id="navMenu">
+                <a href="#quiz" data-section="quiz">Quiz</a>
+                <a href="#grammar" data-section="grammar">Grammar</a>
+                <a href="#writing" data-section="writing">Writing</a>
+                <a href="#resources" data-section="resources">Resources</a>
+                <a href="#contact" class="contact-link">📞 Contact Us</a>
             </nav>
-            <button class="dark-mode-btn" id="darkModeToggle">🌙</button>
+            <button class="dark-toggle" id="darkToggle">🌙</button>
         </div>
-    </header>
+    </div>
 
-    <section class="cf-hero">
-        <div class="cf-container">
+    <main class="container">
+        <!-- Hero -->
+        <section class="hero">
             <h1>Master English, One Step at a Time</h1>
-            <p>Interactive quizzes, useful study tools, and daily tips – crafted for 11th‑grade success.</p>
-        </div>
-    </section>
+            <p>Interactive quizzes, helpful study tools, and daily tips — built for 11th‑grade success.</p>
+        </section>
 
-    <section class="daily-tip">
-        <div class="cf-container">
-            <div class="tip-card">
+        <!-- Typing Tip -->
+        <section class="section fade-up">
+            <div class="card tip-card">
                 <span class="tip-icon">💡</span>
-                <div class="tip-content">
+                <div>
                     <p class="tip-text" id="typingTip"></p>
                     <span class="tip-category" id="tipCategory"></span>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <section id="vocab" class="vocab-box slide-left">
-        <span style="font-size:2rem;">📖</span>
-        <div>
-            <div class="word" id="vocabWord">Ephemeral</div>
-            <div class="def" id="vocabDef">Lasting for a very short time.</div>
-        </div>
-    </section>
+        <!-- Vocabulary Builder -->
+        <section class="mini-card fade-up" id="vocabBox">
+            <span style="font-size:2rem;">📖</span>
+            <div>
+                <div class="word" id="vocabWord">Ephemeral</div>
+                <div class="def" id="vocabDef">Lasting for a very short time.</div>
+            </div>
+        </section>
 
-    <section class="cf-quiz" id="quiz">
-        <div class="cf-container">
-            <h2 class="cf-text-center">🧠 Quick Knowledge Check</h2>
-            <p class="cf-quiz-sub cf-text-center">10 random questions each round – earn XP and streaks!</p>
-            <div class="cf-quiz-card" id="quizContainer">
+        <!-- Quiz -->
+        <section class="section fade-up" id="quiz">
+            <h2 style="text-align:center; margin-bottom:1rem;">🧠 Quick Knowledge Check</h2>
+            <p style="text-align:center; color:var(--text-light); margin-bottom:2rem;">10 random questions each round – earn XP and streaks!</p>
+            <div class="card quiz-card" id="quizContainer">
                 <div id="quizInner"></div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <section id="grammar" class="study-section slide-right">
-        <h3>📖 Grammar Quick Tips</h3>
-        <div class="study-card-grid">
-            <div class="study-card"><span>🔤</span><strong>Subject-Verb Agreement</strong><br>Singular subjects need singular verbs.</div>
-            <div class="study-card"><span>🕰️</span><strong>Tenses</strong><br>Present perfect: "I have finished my homework."</div>
-            <div class="study-card"><span>📌</span><strong>Articles</strong><br>"The" for specific, "a/an" for general.</div>
-            <div class="study-card"><span>🧩</span><strong>Prepositions</strong><br>Common pairs: "interested in", "good at".</div>
-        </div>
-    </section>
+        <!-- Grammar Tips -->
+        <section class="section fade-up" id="grammar">
+            <h3 style="text-align:center; margin-bottom:1.5rem;">📖 Grammar Quick Tips</h3>
+            <div class="grid">
+                <div class="grid-item"><span>🔤</span><strong>Subject-Verb Agreement</strong><br>Singular subjects need singular verbs.</div>
+                <div class="grid-item"><span>🕰️</span><strong>Tenses</strong><br>Present perfect: "I have finished my homework."</div>
+                <div class="grid-item"><span>📌</span><strong>Articles</strong><br>"The" for specific, "a/an" for general.</div>
+                <div class="grid-item"><span>🧩</span><strong>Prepositions</strong><br>Common pairs: "interested in", "good at".</div>
+            </div>
+        </section>
 
-    <section id="writing" class="study-section slide-left">
-        <h3>📝 Writing Prompts</h3>
-        <ul style="list-style: '✅ ';">
-            <li>Describe a memorable childhood moment using all five senses.</li>
-            <li>Write a letter to your future self in 5 years.</li>
-            <li>Argue: "Should homework be banned?"</li>
-            <li>Narrate a day in the life of your favourite literary character.</li>
-        </ul>
-    </section>
+        <!-- Writing Prompts -->
+        <section class="section fade-up" id="writing">
+            <h3 style="text-align:center; margin-bottom:1rem;">📝 Writing Prompts</h3>
+            <div class="card" style="text-align:left;">
+                <ul style="list-style: '✅ '; padding-left: 1.5rem; color: var(--text-light);">
+                    <li>Describe a memorable childhood moment using all five senses.</li>
+                    <li>Write a letter to your future self in 5 years.</li>
+                    <li>Argue: "Should homework be banned?"</li>
+                    <li>Narrate a day in the life of your favourite literary character.</li>
+                </ul>
+            </div>
+        </section>
 
-    <section id="streak" class="streak-box slide-right">
-        <span>🔥</span>
-        <div class="streak-day" id="streakContainer"></div>
-    </section>
+        <!-- Streak Calendar -->
+        <section class="mini-card streak-box fade-up" id="streakBox">
+            <span>🔥</span>
+            <div class="streak-day" id="streakContainer"></div>
+        </section>
 
-    <section id="resources" class="study-section slide-left">
-        <h3>📚 Recommended Resources</h3>
-        <div class="study-card-grid">
-            <div class="study-card"><span>🎧</span><strong>Podcasts</strong><br>"The English We Speak" (BBC)</div>
-            <div class="study-card"><span>📱</span><strong>Apps</strong><br>Grammarly, Duolingo</div>
-            <div class="study-card"><span>📖</span><strong>eBooks</strong><br>Project Gutenberg</div>
-            <div class="study-card"><span>🎥</span><strong>YouTube</strong><br>English with Lucy</div>
-        </div>
-    </section>
+        <!-- Recommended Resources -->
+        <section class="section fade-up" id="resources">
+            <h3 style="text-align:center; margin-bottom:1.5rem;">📚 Recommended Resources</h3>
+            <div class="grid">
+                <div class="grid-item"><span>🎧</span><strong>Podcasts</strong><br>"The English We Speak" (BBC)</div>
+                <div class="grid-item"><span>📱</span><strong>Apps</strong><br>Grammarly, Duolingo</div>
+                <div class="grid-item"><span>📖</span><strong>eBooks</strong><br>Project Gutenberg</div>
+                <div class="grid-item"><span>🎥</span><strong>YouTube</strong><br>English with Lucy</div>
+            </div>
+        </section>
 
-    <div class="quote-box fade-up" id="quoteBox"></div>
+        <!-- Inspirational Quote -->
+        <div class="quote-box fade-up" id="quoteBox" style="margin-top:2rem;"></div>
 
-    <section id="contact">
-        <h2>📞 Contact Us</h2>
-        <div class="contact-card">
-            <p>📧 <a href="mailto:support@campusfify.com">support@campusfify.com</a></p>
-            <p>📞 <a href="tel:+919999999999">+91 99999 99999</a></p>
-            <p>🏢 New Delhi, India</p>
-        </div>
-    </section>
+        <!-- Contact (secret chat entrance) -->
+        <section id="contact" class="fade-up">
+            <h2>📞 Contact Us</h2>
+            <div class="contact-card">
+                <p>📧 <a href="mailto:support@campusfify.com">support@campusfify.com</a></p>
+                <p>📞 <a href="tel:+919999999999">+91 99999 99999</a></p>
+                <p>🏢 New Delhi, India</p>
+            </div>
+        </section>
+    </main>
 
-    <footer class="cf-footer">
-        <p>📚 LitMaster · Your interactive English study companion for 11th grade and beyond.</p>
+    <footer>
+        <p>📚 LitMaster · Your interactive English study companion for 11th grade.</p>
     </footer>
 
     <canvas id="confettiCanvas"></canvas>
@@ -362,10 +367,10 @@
         window.isLoggedIn = <%= user ? 'true' : 'false' %>;
 
         // ---------- DARK MODE ----------
-        const darkToggle = document.getElementById('darkModeToggle');
-        const prefersDark = localStorage.getItem('darkMode') === 'true';
-        if (prefersDark) document.body.classList.add('dark');
-        darkToggle.textContent = prefersDark ? '☀️' : '🌙';
+        const darkToggle = document.getElementById('darkToggle');
+        const storedDark = localStorage.getItem('darkMode') === 'true';
+        if (storedDark) document.body.classList.add('dark');
+        darkToggle.textContent = storedDark ? '☀️' : '🌙';
         darkToggle.addEventListener('click', () => {
             document.body.classList.toggle('dark');
             const isDark = document.body.classList.contains('dark');
@@ -374,19 +379,21 @@
         });
 
         // ---------- SECRET CHAT ENTRANCE ----------
-        document.querySelectorAll('.cf-contact-link, .cf-btn--contact').forEach(btn => {
+        document.querySelectorAll('.contact-link, .btn--contact').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.preventDefault();
                 window.isLoggedIn ? window.location.href = '/chat' : window.location.href = '/login';
             });
         });
 
-        // ---------- SCROLL REVEAL ANIMATIONS ----------
-        const scrollElements = document.querySelectorAll('.slide-left, .slide-right, .fade-up');
+        // ---------- SCROLL REVEAL ----------
+        const revealElements = document.querySelectorAll('.fade-up');
         const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
-        }, { threshold: 0.2 });
-        scrollElements.forEach(el => observer.observe(el));
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.15 });
+        revealElements.forEach(el => observer.observe(el));
 
         // ---------- TYPING TIP ----------
         const tips = [
@@ -397,24 +404,24 @@
             { tip: "Spend 5 minutes planning your essay – a quick mind map prevents panic.", category: "time management" },
             { tip: "Notice writing is a guaranteed 4‑mark question; practice 2 formats a week.", category: "high‑probability" }
         ];
-        let tipIndex = Math.floor(Math.random() * tips.length);
-        let charIndex = 0;
-        const tipTextEl = document.getElementById('typingTip');
-        const tipCatEl = document.getElementById('tipCategory');
+        let tipIdx = Math.floor(Math.random() * tips.length);
+        let charIdx = 0;
+        const tipText = document.getElementById('typingTip');
+        const tipCat = document.getElementById('tipCategory');
 
         function typeTip() {
-            const currentTip = tips[tipIndex];
-            tipCatEl.textContent = currentTip.category;
-            charIndex = 0;
-            tipTextEl.textContent = '';
+            const current = tips[tipIdx];
+            tipCat.textContent = current.category;
+            tipText.textContent = '';
+            charIdx = 0;
             const interval = setInterval(() => {
-                if (charIndex < currentTip.tip.length) {
-                    tipTextEl.textContent += currentTip.tip[charIndex];
-                    charIndex++;
+                if (charIdx < current.tip.length) {
+                    tipText.textContent += current.tip[charIdx];
+                    charIdx++;
                 } else {
                     clearInterval(interval);
                     setTimeout(() => {
-                        tipIndex = (tipIndex + 1) % tips.length;
+                        tipIdx = (tipIdx + 1) % tips.length;
                         typeTip();
                     }, 4000);
                 }
@@ -436,89 +443,79 @@
         const streakContainer = document.getElementById('streakContainer');
         const days = ['M','T','W','T','F','S','S'];
         const streakStatus = [true, true, false, true, true, true, false];
-        let streakHTML = '';
+        let html = '';
         days.forEach((d, i) => {
-            streakHTML += `<div class="streak-day"><span>${streakStatus[i] ? '✅' : '⬜'}</span><small>${d}</small></div>`;
+            html += `<div class="streak-day"><span>${streakStatus[i] ? '✅' : '⬜'}</span><small>${d}</small></div>`;
         });
-        streakContainer.innerHTML = streakHTML;
+        streakContainer.innerHTML = html;
 
         // ---------- INSPIRATIONAL QUOTE ----------
         const quotes = [
             { text: "The beautiful thing about learning is nobody can take it away from you.", author: "B.B. King" },
-            { text: "Education is the passport to the future, for tomorrow belongs to those who prepare for it today.", author: "Malcolm X" },
+            { text: "Education is the passport to the future.", author: "Malcolm X" },
             { text: "The expert in anything was once a beginner.", author: "Helen Hayes" }
         ];
         const quote = quotes[Math.floor(Math.random() * quotes.length)];
         document.getElementById('quoteBox').innerHTML = `<p>“${quote.text}”</p><small>— ${quote.author}</small>`;
 
-        // ---------- CONFETTI ENGINE ----------
-        const confettiCanvas = document.getElementById('confettiCanvas');
-        const ctx = confettiCanvas.getContext('2d');
-        let confettiPieces = [], confettiRunning = false, confettiRAF = null;
+        // ---------- CONFETTI ----------
+        const canvas = document.getElementById('confettiCanvas');
+        const ctx = canvas.getContext('2d');
+        let confettiPieces = [], running = false, raf = null;
 
-        function resizeConfettiCanvas() {
-            confettiCanvas.width = window.innerWidth;
-            confettiCanvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeConfettiCanvas);
-        resizeConfettiCanvas();
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
 
-        class ConfettiPiece {
+        class Confetti {
             constructor() {
-                this.x = Math.random() * confettiCanvas.width;
+                this.x = Math.random() * canvas.width;
                 this.y = -20;
                 this.w = Math.random() * 10 + 6;
                 this.h = Math.random() * 6 + 4;
                 this.color = `hsl(${Math.random() * 360}, 90%, 70%)`;
-                this.speedY = Math.random() * 5 + 4;
-                this.speedX = (Math.random() - 0.5) * 4;
-                this.rotation = 0;
-                this.rotSpeed = (Math.random() - 0.5) * 0.2;
+                this.vy = Math.random() * 5 + 4;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.rot = 0; this.rv = (Math.random() - 0.5) * 0.2;
                 this.opacity = 1;
-                this.friction = 0.99;
-                this.gravity = 0.08;
-                this.wind = (Math.random() - 0.5) * 0.06;
             }
             update() {
-                this.speedY += this.gravity; this.speedX += this.wind;
-                this.speedY *= this.friction; this.speedX *= this.friction;
-                this.x += this.speedX; this.y += this.speedY;
-                this.rotation += this.rotSpeed;
-                if (this.y > confettiCanvas.height + 20) this.opacity = 0;
-                if (this.opacity > 0 && this.y > confettiCanvas.height * 0.7) {
-                    this.opacity = Math.max(0, 1 - (this.y - confettiCanvas.height * 0.7) / (confettiCanvas.height * 0.3));
-                }
+                this.vy += 0.08; this.vx *= 0.99; this.vy *= 0.99;
+                this.x += this.vx; this.y += this.vy; this.rot += this.rv;
+                if (this.y > canvas.height + 20) this.opacity = 0;
+                if (this.opacity > 0 && this.y > canvas.height * 0.7)
+                    this.opacity = Math.max(0, 1 - (this.y - canvas.height * 0.7) / (canvas.height * 0.3));
             }
             draw() {
-                ctx.save(); ctx.globalAlpha = this.opacity; ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                ctx.save(); ctx.globalAlpha = this.opacity; ctx.translate(this.x, this.y); ctx.rotate(this.rot);
                 ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h); ctx.restore();
             }
         }
 
         function launchConfetti(count = 200) {
-            confettiPieces = Array.from({length: count}, () => new ConfettiPiece());
-            confettiRunning = true; confettiCanvas.classList.add('active');
-            if (confettiRAF) cancelAnimationFrame(confettiRAF);
-            animateConfetti();
+            confettiPieces = Array.from({length: count}, () => new Confetti());
+            running = true; canvas.classList.add('active');
+            if (raf) cancelAnimationFrame(raf); animateConfetti();
             setTimeout(() => {
-                confettiRunning = false; if (confettiRAF) cancelAnimationFrame(confettiRAF);
+                running = false; if (raf) cancelAnimationFrame(raf);
                 let fade = 1;
                 const fadeInterval = setInterval(() => {
                     fade -= 0.04;
-                    if (fade <= 0) { clearInterval(fadeInterval); confettiCanvas.classList.remove('active'); ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); }
-                    else { ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); confettiPieces.forEach(p => { p.opacity *= 0.97; p.draw(); }); }
+                    if (fade <= 0) { clearInterval(fadeInterval); canvas.classList.remove('active'); ctx.clearRect(0,0,canvas.width,canvas.height); }
+                    else { ctx.clearRect(0,0,canvas.width,canvas.height); confettiPieces.forEach(p => { p.opacity *= 0.97; p.draw(); }); }
                 }, 30);
             }, 6000);
         }
         function animateConfetti() {
-            if (!confettiRunning) return;
-            ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
-            let alive = false; confettiPieces.forEach(p => { p.update(); if (p.opacity > 0.01) alive = true; p.draw(); });
-            if (alive) confettiRAF = requestAnimationFrame(animateConfetti);
-            else { confettiCanvas.classList.remove('active'); ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); }
+            if (!running) return;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            let alive = false;
+            confettiPieces.forEach(p => { p.update(); if (p.opacity > 0.01) alive = true; p.draw(); });
+            if (alive) raf = requestAnimationFrame(animateConfetti);
+            else { canvas.classList.remove('active'); ctx.clearRect(0,0,canvas.width,canvas.height); }
         }
 
-        // ===== QUIZ ENGINE (unchanged, full version) =====
+        // ===== QUIZ ENGINE (adapted to new CSS) =====
         let questions = [], currentIndex = 0, score = 0, xp = 0, streak = 0, highestStreak = 0;
         let answered = false, totalAttempted = 0, total = 0;
         const quizInner = document.getElementById('quizInner');
@@ -541,53 +538,48 @@
                 if (percent >= 50) setTimeout(() => launchConfetti(220), 200);
 
                 quizInner.innerHTML = `
-                    <div class="cf-quiz-result">
-                        <span class="cf-result-emoji">${emoji}</span>
+                    <div class="quiz-result">
+                        <span style="font-size:3rem;">${emoji}</span>
                         <h3>Quiz Complete!</h3>
-                        <div class="cf-result-grade">${grade}</div>
-                        <p class="cf-result-stats">
-                            You got <strong>${score}</strong> out of <strong>${totalAttempted}</strong> correct (${percent}%)<br>
-                            ⭐ XP: ${xp}  ${streak > 0 ? ' | 🔥 Best Streak: ' + highestStreak : ''}
-                        </p>
-                        <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
-                            <button class="cf-btn cf-btn--blue" id="restartQuiz">🔄 New Round</button>
-                            <button class="cf-btn cf-btn--outline" id="shareScore">📋 Copy Score</button>
+                        <p style="color:var(--text-light);">${grade}</p>
+                        <p style="color:var(--text-light);">You got <strong>${score}</strong> out of <strong>${totalAttempted}</strong> correct (${percent}%)<br>
+                        ⭐ XP: ${xp}  ${streak > 0 ? ' | 🔥 Best Streak: ' + highestStreak : ''}</p>
+                        <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; margin-top:1rem;">
+                            <button class="btn" id="restartQuiz">🔄 New Round</button>
+                            <button class="btn btn--outline" id="shareScore">📋 Copy Score</button>
                         </div>
                     </div>
                 `;
                 document.getElementById('restartQuiz').addEventListener('click', startNewQuiz);
-                document.getElementById('shareScore').addEventListener('click', () => {
-                    navigator.clipboard.writeText(shareText).then(() => alert('Score copied!'));
-                });
+                document.getElementById('shareScore').addEventListener('click', () => navigator.clipboard.writeText(shareText).then(() => alert('Score copied!')));
                 return;
             }
 
             const q = questions[currentIndex];
             const isLast = currentIndex === total - 1;
             const optionsHtml = q.opts.map((opt, idx) => `
-                <div class="cf-option" data-optindex="${idx}">
-                    <input type="radio" name="quizOption" id="opt_${idx}" value="${idx}">
-                    <label for="opt_${idx}">${String.fromCharCode(65 + idx)}. ${opt}</label>
+                <div class="option" data-optindex="${idx}">
+                    <div class="circle"></div>
+                    <label>${String.fromCharCode(65 + idx)}. ${opt}</label>
                 </div>
             `).join('');
-
             const progress = ((currentIndex) / total) * 100;
 
             quizInner.innerHTML = `
-                <div class="cf-quiz-progress">
+                <div class="quiz-progress">
                     <span>Question ${currentIndex+1}/${total}</span>
-                    <span class="cf-badge">🏆 ${score}</span>
-                    <span class="cf-xp-badge">⭐ ${xp} XP</span>
-                    ${streak > 0 ? `<span class="cf-streak-fire">🔥${streak}</span>` : ''}
+                    <span class="badge">🏆 ${score}</span>
+                    <span class="badge xp-badge">⭐ ${xp} XP</span>
+                    ${streak > 0 ? `<span class="streak-fire">🔥${streak}</span>` : ''}
                 </div>
-                <div class="cf-progress-bar"><div class="cf-progress-fill" style="width:${progress}%;"></div></div>
-                <div class="cf-question-text">${q.q}</div>
-                <div class="cf-options">${optionsHtml}</div>
-                <div class="cf-quiz-actions">
-                    <div class="cf-feedback" id="feedbackMsg">Select an option or click "Show Answer"</div>
+                <div class="progress-bar"><div class="progress-fill" style="width:${progress}%;"></div></div>
+                <div class="question-text">${q.q}</div>
+                <div class="options" id="optionsContainer">${optionsHtml}</div>
+                <div class="quiz-actions">
+                    <div class="feedback" id="feedbackMsg">Select an option or click "Show Answer"</div>
                     <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
-                        <button class="cf-btn cf-btn--outline" id="showAnswerBtn">👀 Show Answer</button>
-                        <button class="cf-btn" id="nextBtn" disabled>${isLast ? 'Finish' : 'Next →'}</button>
+                        <button class="btn btn--outline" id="showAnswerBtn">👀 Show Answer</button>
+                        <button class="btn" id="nextBtn" disabled>${isLast ? 'Finish' : 'Next →'}</button>
                     </div>
                 </div>
             `;
@@ -595,97 +587,76 @@
             const nextBtn = document.getElementById('nextBtn');
             const showAnswerBtn = document.getElementById('showAnswerBtn');
             const feedback = document.getElementById('feedbackMsg');
-            const options = document.querySelectorAll('.cf-option');
-            const radios = document.querySelectorAll('input[name="quizOption"]');
+            const options = document.querySelectorAll('.option');
+            let selectedIdx = null;
 
-            options.forEach((opt, idx) => {
+            options.forEach(opt => {
                 opt.addEventListener('click', () => {
-                    if (opt.classList.contains('cf-disabled')) return;
-                    const radio = opt.querySelector('input[type="radio"]');
-                    radio.checked = true;
-                    radio.dispatchEvent(new Event('change', {bubbles: true}));
-                });
-                opt.querySelector('label').addEventListener('click', e => e.stopPropagation());
-            });
-            radios.forEach(radio => {
-                radio.addEventListener('change', () => {
-                    if (answered) return;
-                    if (document.querySelector('input[name="quizOption"]:checked')) {
-                        nextBtn.disabled = false;
-                        feedback.textContent = 'Ready! Click Next to check.';
-                        feedback.className = 'cf-feedback';
-                    }
+                    if (opt.classList.contains('disabled') || answered) return;
+                    options.forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
+                    selectedIdx = parseInt(opt.dataset.optindex);
+                    nextBtn.disabled = false;
+                    feedback.textContent = 'Ready! Click Next to check.';
+                    feedback.className = 'feedback';
                 });
             });
 
-            function handleAnswer(selectedIdx) {
-                if (answered) return;
+            function handleAnswer() {
+                if (answered || selectedIdx === null) return;
+                answered = true;
                 const correctIdx = q.ans;
                 options.forEach((opt, idx) => {
-                    opt.classList.add('cf-disabled');
-                    opt.querySelector('input[type="radio"]').disabled = true;
-                    if (idx === correctIdx) opt.classList.add('cf-correct');
-                    else if (idx === selectedIdx && idx !== correctIdx) opt.classList.add('cf-wrong');
+                    opt.classList.add('disabled');
+                    if (idx === correctIdx) opt.classList.add('correct');
+                    else if (idx === selectedIdx && idx !== correctIdx) opt.classList.add('wrong');
                 });
 
                 if (selectedIdx === correctIdx) {
                     score++; xp += 10; streak++;
                     if (streak > highestStreak) highestStreak = streak;
                     feedback.innerHTML = `✅ Correct! <span style="display:block;font-size:0.9rem;margin-top:0.2rem;">${q.fact}</span>`;
-                    feedback.className = 'cf-feedback cf-correct-text';
+                    feedback.className = 'feedback correct';
                     if (streak >= 3) setTimeout(() => launchConfetti(120), 100);
                 } else {
                     streak = 0;
                     feedback.innerHTML = `❌ Incorrect. <span style="display:block;font-size:0.9rem;margin-top:0.2rem;">${q.fact}</span>`;
-                    feedback.className = 'cf-feedback cf-wrong-text';
+                    feedback.className = 'feedback wrong';
                 }
-                answered = true; totalAttempted++;
+                totalAttempted++;
                 nextBtn.textContent = isLast ? 'See Results' : 'Next →';
-                document.querySelector('.cf-badge').textContent = '🏆 ' + score;
-                document.querySelector('.cf-xp-badge').textContent = '⭐ ' + xp + ' XP';
-                const streakEl = document.querySelector('.cf-streak-fire');
+                document.querySelector('.badge').textContent = '🏆 ' + score;
+                document.querySelector('.xp-badge').textContent = '⭐ ' + xp + ' XP';
+                const streakEl = document.querySelector('.streak-fire');
                 if (streakEl) streakEl.textContent = streak > 0 ? '🔥' + streak : '';
-                nextBtn.onclick = () => {
-                    currentIndex = isLast ? total : currentIndex + 1;
-                    answered = false;
-                    renderQuiz();
-                };
+                nextBtn.onclick = () => { currentIndex = isLast ? total : currentIndex + 1; answered = false; selectedIdx = null; renderQuiz(); };
             }
 
-            nextBtn.addEventListener('click', () => {
-                if (answered) return;
-                const selected = document.querySelector('input[name="quizOption"]:checked');
-                if (selected) handleAnswer(parseInt(selected.value));
-            });
-
+            nextBtn.addEventListener('click', handleAnswer);
             showAnswerBtn.addEventListener('click', () => {
                 if (answered) return;
+                answered = true;
                 const correctIdx = q.ans;
                 options.forEach((opt, idx) => {
-                    opt.classList.add('cf-disabled');
-                    opt.querySelector('input[type="radio"]').disabled = true;
-                    if (idx === correctIdx) opt.classList.add('cf-correct');
+                    opt.classList.add('disabled');
+                    if (idx === correctIdx) opt.classList.add('correct');
                 });
                 feedback.innerHTML = `👀 Answer shown: <span style="display:block;font-size:0.9rem;margin-top:0.2rem;">${q.fact}</span>`;
-                feedback.className = 'cf-feedback';
-                answered = true; totalAttempted++;
+                feedback.className = 'feedback';
+                totalAttempted++;
                 nextBtn.disabled = false;
                 nextBtn.textContent = isLast ? 'See Results' : 'Next →';
                 streak = 0;
-                const streakEl = document.querySelector('.cf-streak-fire');
+                const streakEl = document.querySelector('.streak-fire');
                 if (streakEl) streakEl.textContent = '';
-                nextBtn.onclick = () => {
-                    currentIndex = isLast ? total : currentIndex + 1;
-                    answered = false;
-                    renderQuiz();
-                };
+                nextBtn.onclick = () => { currentIndex = isLast ? total : currentIndex + 1; answered = false; selectedIdx = null; renderQuiz(); };
             });
         }
 
         async function startNewQuiz() {
             const fetched = await fetchRandomQuestions(10);
             if (!fetched.length) {
-                quizInner.innerHTML = '<div class="cf-quiz-result"><h3>❌ No questions yet</h3><p>Try again later!</p></div>';
+                quizInner.innerHTML = '<div class="quiz-result"><h3>❌ No questions yet</h3><p>Try again later!</p></div>';
                 return;
             }
             questions = fetched; currentIndex = 0; score = 0; xp = 0; streak = 0; highestStreak = 0;
@@ -694,32 +665,27 @@
         }
         startNewQuiz();
 
-        // ---------- NAVIGATION + ACTIVE LINK ----------
+        // ---------- NAVIGATION ----------
         const sections = document.querySelectorAll('section[id]');
-        const navLinks = document.querySelectorAll('.cf-nav a[data-section]');
+        const navLinks = document.querySelectorAll('.nav a[data-section]');
         function changeActiveLink() {
             let index = sections.length;
             while (--index && window.scrollY + 120 < sections[index].offsetTop) {}
-            navLinks.forEach(link => link.classList.remove('cf-active-link'));
-            if (navLinks[index]) navLinks[index].classList.add('cf-active-link');
+            navLinks.forEach(link => link.classList.remove('active'));
+            if (navLinks[index]) navLinks[index].classList.add('active');
         }
         changeActiveLink();
         window.addEventListener('scroll', changeActiveLink, { passive: true });
         navLinks.forEach(link => {
             link.addEventListener('click', e => {
                 e.preventDefault();
-                const targetId = link.getAttribute('data-section');
-                const target = document.getElementById(targetId);
+                const target = document.getElementById(link.getAttribute('data-section'));
                 if (target) target.scrollIntoView({ behavior: 'smooth' });
             });
         });
 
         // Mobile menu
-        const hamburger = document.getElementById('hamburgerBtn');
-        const navMenu = document.getElementById('navMenu');
-        hamburger.addEventListener('click', () => {
-            navMenu.classList.toggle('open');
-        });
+        document.getElementById('hamburgerBtn').addEventListener('click', () => document.getElementById('navMenu').classList.toggle('open'));
     </script>
 </body>
 </html>
