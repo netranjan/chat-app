@@ -24,10 +24,12 @@ async function initialize() {
   app.use('/', apiRoutes);
 
   app.use((err, req, res, next) => {
-    console.error('Unhandled error:', err);
-    res.status(500).send('Internal Server Error');
+    console.error('Unhandled error:', err.message || err);
+    if (res.headersSent) {
+      return next(err);
+    }
+    res.status(500).json({ error: 'Internal Server Error' });
   });
-
   return app;
 }
 

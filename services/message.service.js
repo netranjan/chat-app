@@ -67,25 +67,26 @@ async function deleteAllMessages(adminId) {
 }
 
 async function getChanges(lastSync) {
-    const lastSyncDate = lastSync ? new Date(lastSync) : new Date(0);
+  const lastSyncDate = lastSync ? new Date(lastSync) : new Date(0);
 
-    // New messages (that are not deleted)
-    const newMessages = await Message.find({
-        timestamp: { $gt: lastSyncDate },
-        deleted: false
-    });
+  // New messages (not deleted)
+  const newMessages = await Message.find({
+    timestamp: { $gt: lastSyncDate },
+    deleted: false
+  });
 
-    // Edited or deleted messages – we need to include deleted ones so clients can hide them
-    const editedMessages = await Message.find({
-        $or: [
-            { editedAt: { $gt: lastSyncDate } },
-            { likesUpdatedAt: { $gt: lastSyncDate } }
-        ]
-        // note: we do NOT filter out deleted here – client will handle that
-    });
+  // Edited or liked messages – include deleted ones so clients can hide them
+  const editedMessages = await Message.find({
+    $or: [
+      { editedAt: { $gt: lastSyncDate } },
+      { likesUpdatedAt: { $gt: lastSyncDate } }
+    ]
+    // note: no "deleted: false" filter – client will handle deleted messages
+  });
 
-    return { newMessages, editedMessages };
+  return { newMessages, editedMessages };
 }
+
 module.exports = {
     getAllMessages,
     sendMessage,
