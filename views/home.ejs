@@ -114,19 +114,63 @@
             transition: background 0.3s;
         }
         body.dark .header { background: rgba(15,23,42,0.85); border-color: rgba(255,255,255,0.05); }
-        .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: nowrap; }
-        .logo {
-            font-weight: 800; font-size: 1.6rem; color: var(--primary);
-            text-decoration: none; letter-spacing: -0.5px;
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.8rem;
+            flex-wrap: nowrap;
         }
-        .nav { display: flex; align-items: center; gap: 1.2rem; font-weight: 500; }
+        .logo {
+            font-weight: 800;
+            font-size: 1.6rem;
+            color: var(--primary);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+            flex-shrink: 0;
+        }
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 500;
+            flex-shrink: 1;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
         .nav a {
-            color: var(--text-light); text-decoration: none; padding: 0.3rem 0;
-            border-bottom: 2px solid transparent; transition: all var(--transition);
+            color: var(--text-light);
+            text-decoration: none;
+            padding: 0.3rem 0;
+            border-bottom: 2px solid transparent;
+            transition: all var(--transition);
             white-space: nowrap;
         }
         .nav a:hover, .nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
-        .dark-toggle { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text); margin-left: 0.5rem; }
+        .dark-toggle {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: var(--text);
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+        .xp-badge-display {
+            background: #ede9fe;
+            color: var(--primary);
+            padding: 0.15rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
+        body.dark .xp-badge-display { background: #312e81; color: #a5b4fc; }
 
         .hero { padding: 3rem 0 2rem; text-align: center; }
         .hero h1 {
@@ -267,12 +311,15 @@
         .guess-option.wrong { border-color: var(--red); background: #fee2e2; }
 
         footer {
-            text-align: center; padding: 2rem; color: var(--text-light);
-            background: var(--card-bg); margin-top: 2rem;
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-light);
+            background: var(--card-bg);
+            margin-top: 3rem;
         }
         .footer-btn {
             display: inline-flex; align-items: center; justify-content: center;
-            gap: 6px; margin-top: 1rem;
+            gap: 6px; margin-top: 1.5rem; margin-bottom: 0.5rem;
             position: relative;
         }
         .footer-btn::after {
@@ -294,7 +341,6 @@
         .fade-up { opacity: 0; transform: translateY(30px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
         .slide-left.visible, .slide-right.visible, .fade-up.visible { opacity: 1; transform: translate(0); }
 
-        /* Toast XP */
         .toast-xp {
             position: fixed;
             bottom: 120px;
@@ -317,24 +363,15 @@
             100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
         }
 
-        .xp-badge-display {
-            background: #ede9fe;
-            color: var(--primary);
-            padding: 0.2rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            margin-left: auto;
-        }
-        body.dark .xp-badge-display { background: #312e81; color: #a5b4fc; }
-
         @media (max-width: 768px) {
-            .nav { gap: 0.6rem; font-size: 0.85rem; }
+            .header-inner { gap: 0.4rem; }
+            .logo { font-size: 1.3rem; }
+            .nav { gap: 0.5rem; font-size: 0.8rem; }
+            .nav a { padding: 0.2rem 0; }
+            .xp-badge-display { font-size: 0.7rem; padding: 0.1rem 0.4rem; margin-left: 0.3rem; }
+            .dark-toggle { font-size: 1.2rem; }
             .hero h1 { font-size: 2rem; }
-            .xp-badge-display { margin-left: 0.5rem; }
+            footer { padding: 2.5rem 1.5rem; }
         }
 
         #confettiCanvas { position: fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:9999; display:none; }
@@ -467,7 +504,7 @@
             darkToggle.textContent = isDark ? '☀️' : '🌙';
         });
 
-        // ---------- SECRET CHAT ENTRANCE (only footer) ----------
+        // ---------- SECRET CHAT ENTRANCE ----------
         document.querySelectorAll('.btn--contact, .footer-btn').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.preventDefault();
@@ -663,7 +700,7 @@
                         btn.classList.add('correct');
                         assocFeedback.innerHTML = '✅ Nice association!';
                         assocFeedback.style.color = 'var(--green)';
-                        addXP(10);                          // REWARD
+                        addXP(10);
                         setTimeout(loadAssociation, 2000);
                     } else {
                         btn.classList.add('wrong');
@@ -708,7 +745,7 @@
                         btn.classList.add('correct');
                         guessFeedback.textContent = '✅ Correct!';
                         guessFeedback.style.color = 'var(--green)';
-                        addXP(10);                          // REWARD
+                        addXP(10);
                         setTimeout(loadGuessWord, 2000);
                     } else {
                         btn.classList.add('wrong');
@@ -887,7 +924,7 @@
                     if (streak > highestStreak) highestStreak = streak;
                     feedback.innerHTML = `✅ Correct! <span style="display:block;font-size:0.9rem;margin-top:0.2rem;">${q.fact}</span>`;
                     feedback.className = 'feedback correct';
-                    addXP(10);                          // REWARD
+                    addXP(10);
                     if (streak >= 3) setTimeout(() => launchConfetti(120), 100);
                 } else {
                     streak = 0;
