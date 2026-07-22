@@ -65,7 +65,6 @@
             position: relative;
         }
 
-        /* New animated background gradient */
         .bg-gradient {
             position: fixed;
             top: 0; left: 0;
@@ -88,7 +87,6 @@
 
         .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 
-        /* Buttons */
         .btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
             background: var(--primary); color: #fff;
@@ -108,7 +106,6 @@
         }
         .btn--contact:hover { background: #059669; }
 
-        /* Header */
         .header {
             position: sticky; top: 0; z-index: 100;
             background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
@@ -129,10 +126,8 @@
             white-space: nowrap;
         }
         .nav a:hover, .nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
-        /* Removed contact-link */
         .dark-toggle { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text); margin-left: 0.5rem; }
 
-        /* Hero */
         .hero { padding: 3rem 0 2rem; text-align: center; }
         .hero h1 {
             font-size: clamp(2.4rem, 8vw, 4rem); font-weight: 800;
@@ -142,7 +137,6 @@
         }
         .hero p { font-size: 1.15rem; color: var(--text-light); max-width: 550px; margin: 0 auto; }
 
-        /* Live Clock */
         .live-clock {
             text-align: center;
             font-weight: 600;
@@ -154,7 +148,6 @@
         .live-clock .date { font-size: 1rem; margin-top: 0.2rem; }
         .live-clock .highlight { font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7; }
 
-        /* Cards */
         .section { padding: 2rem 0; }
         .card {
             background: var(--card-bg); border-radius: var(--radius);
@@ -164,7 +157,6 @@
         .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
         .card h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.8rem; }
 
-        /* Curiosity card */
         .curiosity-card {
             border-left: 6px solid var(--primary);
             display: flex; align-items: center; gap: 1.2rem;
@@ -178,7 +170,6 @@
         }
         .curiosity-progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.1s; }
 
-        /* Quiz (unchanged) */
         .quiz-card { max-width: 800px; margin: 0 auto; }
         .quiz-progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-weight: 600; color: var(--text-light); flex-wrap: wrap; gap: 0.5rem; }
         .badge {
@@ -226,7 +217,6 @@
         .streak-fire { font-size: 1.2rem; color: var(--accent); margin-left: 0.3rem; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-        /* Fun Fact */
         .fact-card {
             background: linear-gradient(135deg, #ede9fe, #e0e7ff);
             border-radius: var(--radius); padding: 1.8rem;
@@ -240,7 +230,6 @@
         .fact-card .fact-text { font-size: 1.2rem; font-weight: 600; font-style: italic; }
         .fact-card .fact-source { font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-light); }
 
-        /* Word Association (now multiple choice) */
         .word-assoc {
             max-width: 500px; margin: 2rem auto;
             text-align: center; background: var(--card-bg); border-radius: var(--radius);
@@ -260,7 +249,6 @@
         body.dark .assoc-option.correct { background: #064e3b; }
         body.dark .assoc-option.wrong { background: #7f1d1d; }
 
-        /* Guess the Word */
         .guess-word {
             max-width: 500px; margin: 2rem auto;
             text-align: center; background: var(--card-bg); border-radius: var(--radius);
@@ -278,7 +266,6 @@
         .guess-option.correct { border-color: var(--green); background: #d1fae5; }
         .guess-option.wrong { border-color: var(--red); background: #fee2e2; }
 
-        /* Footer */
         footer {
             text-align: center; padding: 2rem; color: var(--text-light);
             background: var(--card-bg); margin-top: 2rem;
@@ -302,15 +289,52 @@
             100% { transform: scale(1.3); opacity: 0; }
         }
 
-        /* Scroll animations: slide left/right + fade-up */
         .slide-left { opacity: 0; transform: translateX(-40px); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
         .slide-right { opacity: 0; transform: translateX(40px); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
         .fade-up { opacity: 0; transform: translateY(30px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
         .slide-left.visible, .slide-right.visible, .fade-up.visible { opacity: 1; transform: translate(0); }
 
+        /* Toast XP */
+        .toast-xp {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: #fff;
+            padding: 0.6rem 1.5rem;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1rem;
+            z-index: 10000;
+            animation: toastFade 2s ease-out forwards;
+            box-shadow: 0 6px 20px rgba(99,102,241,0.4);
+        }
+        @keyframes toastFade {
+            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+
+        .xp-badge-display {
+            background: #ede9fe;
+            color: var(--primary);
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto;
+        }
+        body.dark .xp-badge-display { background: #312e81; color: #a5b4fc; }
+
         @media (max-width: 768px) {
             .nav { gap: 0.6rem; font-size: 0.85rem; }
             .hero h1 { font-size: 2rem; }
+            .xp-badge-display { margin-left: 0.5rem; }
         }
 
         #confettiCanvas { position: fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:9999; display:none; }
@@ -318,7 +342,6 @@
     </style>
 </head>
 <body>
-    <!-- Animated gradient background -->
     <div class="bg-gradient"></div>
 
     <div class="header">
@@ -330,25 +353,23 @@
                 <a href="#wordassoc" data-section="wordassoc">Word Assoc</a>
                 <a href="#guessword" data-section="guessword">Guess Word</a>
             </nav>
+            <span class="xp-badge-display" id="totalXPDisplay">⭐ 0 XP</span>
             <button class="dark-toggle" id="darkToggle">🌙</button>
         </div>
     </div>
 
     <main class="container">
-        <!-- Hero -->
         <section class="hero fade-up">
             <h1>Master English, One Step at a Time</h1>
             <p>Interactive quizzes, fun word games, and fascinating facts — crafted for 11th‑grade success.</p>
         </section>
 
-        <!-- Live Indian Clock -->
         <div class="live-clock fade-up" id="liveClock">
             <div class="time" id="clockTime"></div>
             <div class="date" id="clockDate"></div>
             <div class="highlight" id="clockHighlight"></div>
         </div>
 
-        <!-- Curiosity of the Moment (with progress bar) -->
         <section class="section slide-left">
             <div class="card curiosity-card">
                 <span class="curiosity-icon" id="curiosityIcon">🤔</span>
@@ -360,7 +381,6 @@
             </div>
         </section>
 
-        <!-- Quiz -->
         <section class="section slide-right" id="quiz">
             <h2 style="text-align:center; margin-bottom:1rem;">🧠 Quick Knowledge Check</h2>
             <p style="text-align:center; color:var(--text-light); margin-bottom:2rem;">10 random questions each round – earn XP and streaks!</p>
@@ -376,7 +396,6 @@
             </div>
         </section>
 
-        <!-- Fun Fact Section -->
         <section class="section slide-left" id="funfact">
             <h2 style="text-align:center; margin-bottom:1.5rem;">📜 Interesting Fact</h2>
             <div class="fact-card" id="funFactCard">
@@ -388,7 +407,6 @@
             </div>
         </section>
 
-        <!-- Word Association (multiple choice) -->
         <section class="section slide-right" id="wordassoc">
             <h2 style="text-align:center; margin-bottom:1.5rem;">🔗 Word Association</h2>
             <div class="word-assoc card">
@@ -401,7 +419,6 @@
             </div>
         </section>
 
-        <!-- Guess the Word (updated themes) -->
         <section class="section slide-left" id="guessword">
             <h2 style="text-align:center; margin-bottom:1.5rem;">🔍 Guess the Word</h2>
             <div class="guess-word card">
@@ -413,13 +430,11 @@
             </div>
         </section>
 
-        <!-- Inspirational Quote -->
         <div class="quote-box slide-right" style="text-align:center; font-style:italic; color:var(--text-light); padding:2rem;">
             <p style="font-size:1.2rem;" id="quoteText"></p>
             <small style="display:block; margin-top:0.5rem;" id="quoteAuthor"></small>
         </div>
 
-        <!-- Contact (secret chat entrance, only footer) -->
         <section id="contact" class="fade-up" style="text-align:center; padding:3rem 0;">
             <h2>📞 Contact Us</h2>
             <div class="card" style="max-width:500px; margin:0 auto;">
@@ -469,11 +484,77 @@
         }, { threshold: 0.15 });
         revealElements.forEach(el => observer.observe(el));
 
-        // ---------- LIVE CLOCK (IST 12h with seconds, day, date, highlight) ----------
+        // ---------- GLOBAL DYNAMIC DATA ----------
+        let curiosities = [];
+        let facts = [];
+        let quotes = [];
+        let associations = [];
+        let guessWords = [];
+        let highlights = [];
+
+        async function fetchAllContent() {
+            try {
+                const types = ['curiosity', 'fact', 'quote', 'association', 'guessWord', 'highlight'];
+                const responses = await Promise.all(
+                    types.map(type => fetch(`/api/content?type=${type}`).then(r => r.json()))
+                );
+                responses.forEach((res, idx) => {
+                    if (res.success) {
+                        const data = res.data;
+                        switch (types[idx]) {
+                            case 'curiosity': curiosities = data; break;
+                            case 'fact': facts = data; break;
+                            case 'quote': quotes = data; break;
+                            case 'association': associations = data; break;
+                            case 'guessWord': guessWords = data; break;
+                            case 'highlight': highlights = data; break;
+                        }
+                    }
+                });
+
+                if (curiosities.length) typeCuriosity();
+                if (facts.length) showFact();
+                if (associations.length) loadAssociation();
+                if (guessWords.length) loadGuessWord();
+                if (quotes.length) showRandomQuote();
+                startNewQuiz();
+            } catch (err) {
+                console.error('Failed to load content:', err);
+            }
+        }
+
+        // ========== XP & REWARDS SYSTEM ==========
+        let totalXP = parseInt(localStorage.getItem('litmaster_xp') || '0');
+        const xpDisplay = document.getElementById('totalXPDisplay');
+        if (xpDisplay) xpDisplay.innerHTML = `⭐ ${totalXP} XP`;
+
+        function addXP(points) {
+            totalXP += points;
+            localStorage.setItem('litmaster_xp', totalXP);
+            if (xpDisplay) xpDisplay.innerHTML = `⭐ ${totalXP} XP`;
+
+            const toast = document.createElement('div');
+            toast.className = 'toast-xp';
+            toast.textContent = `+${points} XP`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2200);
+
+            const milestones = [100, 200, 500, 1000, 2000, 5000];
+            for (const m of milestones) {
+                if (totalXP === m) {
+                    launchConfetti(300);
+                    setTimeout(() => {
+                        alert(`🎉 Congratulations! You've reached ${m} XP! 🏆`);
+                    }, 500);
+                    break;
+                }
+            }
+        }
+
+        // ---------- LIVE CLOCK (IST 12h with seconds, day, date, highlight from DB) ----------
         function updateClock() {
             const now = new Date();
-            // Convert to IST (UTC+5:30)
-            const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in ms
+            const istOffset = 5.5 * 60 * 60 * 1000;
             const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
             const ist = new Date(utc + istOffset);
 
@@ -491,47 +572,28 @@
             document.getElementById('clockTime').textContent = timeStr;
             document.getElementById('clockDate').textContent = `${dayStr}, ${dateStr}`;
 
-            // Random highlight of the day (change every minute)
-            const highlights = [
-                "📖 World Book Day – read a new chapter!",
-                "🐱 International Cat Day – celebrate feline friends.",
-                "❤️ Love your neighbour day!",
-                "🇮🇳 Indian Independence Day (15 Aug) coming soon.",
-                "🕉️ Today is a great day for meditation.",
-                "🎓 Education is the most powerful weapon.",
-                "🐶 Walk your dog – it's good for both of you!",
-                "📚 Library day – borrow a book.",
-            ];
-            const idx = Math.floor(ist.getTime() / 60000) % highlights.length; // change every minute
-            document.getElementById('clockHighlight').textContent = highlights[idx];
+            if (highlights.length > 0) {
+                const block = Math.floor(ist.getMinutes() / 2) % highlights.length;
+                document.getElementById('clockHighlight').textContent = highlights[block].text;
+            } else {
+                document.getElementById('clockHighlight').textContent = "📖 Keep learning!";
+            }
         }
         updateClock();
         setInterval(updateClock, 1000);
 
         // ---------- CURIOSITY OF THE MOMENT (typing + progress bar) ----------
-        const curiosities = [
-            { fact: "Cats have been domesticated for around 4,000 years and were worshipped in ancient Egypt.", icon: "🐱", source: "History of Pets" },
-            { fact: "A group of flamingos is called a 'flamboyance'.", icon: "🦩", source: "Animal Facts" },
-            { fact: "India is the world's largest producer of milk, thanks to its love for cows.", icon: "🇮🇳", source: "FAO" },
-            { fact: "The word 'love' appears over 300 times in Shakespeare's works.", icon: "❤️", source: "Shakespeare Lexicon" },
-            { fact: "Dogs have unique nose prints, just like human fingerprints.", icon: "🐶", source: "Animal Trivia" },
-            { fact: "The Hindu god Ganesha is known as the remover of obstacles.", icon: "🕉️", source: "Indian Mythology" },
-            { fact: "Honey never spoils; 3,000‑year‑old honey is still edible.", icon: "🍯", source: "History Facts" },
-            { fact: "The average person spends 6 months of their life waiting for red lights.", icon: "🚦", source: "Random Facts" },
-            { fact: "A cat's purr vibrates at a frequency that promotes bone growth.", icon: "🐈", source: "Veterinary Research" },
-            { fact: "India has 22 official languages, and English is one of them.", icon: "🇮🇳", source: "Constitution of India" },
-            { fact: "The Taj Mahal was built by Emperor Shah Jahan for his wife.", icon: "🕌", source: "UNESCO" },
-            { fact: "Love can reduce physical pain by activating the same brain pathways as painkillers.", icon: "💕", source: "Neuroscience" },
-        ];
-        let curIdx = Math.floor(Math.random() * curiosities.length);
+        let curIdx = 0;
         const curiosityIcon = document.getElementById('curiosityIcon');
         const curiosityText = document.getElementById('curiosityText');
         const curiositySource = document.getElementById('curiositySource');
         const progressFill = document.getElementById('curiosityProgressFill');
         let charPos = 0;
+        let typingSpeed = 60;
 
         function typeCuriosity() {
-            const cur = curiosities[curIdx];
+            if (!curiosities.length) return;
+            const cur = curiosities[curIdx % curiosities.length];
             curiosityIcon.textContent = cur.icon;
             curiositySource.textContent = `— ${cur.source}`;
             curiosityText.textContent = '';
@@ -548,40 +610,27 @@
                     setTimeout(() => {
                         curIdx = (curIdx + 1) % curiosities.length;
                         typeCuriosity();
-                    }, 5000);
+                    }, 8000);
                 }
-            }, 40);
+            }, typingSpeed);
         }
-        typeCuriosity();
 
-        // ---------- FUN FACT (rotates on click / 12 sec) ----------
-        const facts = [
-            { fact: "Dogs can understand up to 250 words and gestures.", icon: "🐕", source: "Canine Science" },
-            { fact: "India has 22 official languages.", icon: "🇮🇳", source: "Constitution of India" },
-            { fact: "A cat's purr has healing properties.", icon: "🐈", source: "Veterinary Research" },
-            { fact: "The Taj Mahal took 22 years to build.", icon: "🕌", source: "UNESCO" },
-            { fact: "Love is so powerful it reduces physical pain.", icon: "💕", source: "Neuroscience" },
-            { fact: "India is the birthplace of four major religions.", icon: "🕉️", source: "Religious History" },
-            { fact: "A group of pugs is called a 'grumble'.", icon: "🐶", source: "Animal Facts" },
-            { fact: "The first English dictionary was published in 1755.", icon: "📚", source: "Johnson's Dictionary" },
-            { fact: "Elephants are the only animals that can't jump.", icon: "🐘", source: "Wildlife Facts" },
-            { fact: "A bolt of lightning is five times hotter than the sun.", icon: "⚡", source: "Science Facts" },
-        ];
-        let factIdx = Math.floor(Math.random() * facts.length);
+        // ---------- FUN FACT (rotates on click / 15 sec) ----------
+        let factIdx = 0;
         const factCard = document.getElementById('funFactCard');
         const factIcon = document.getElementById('factIcon');
         const factText = document.getElementById('factText');
         const factSource = document.getElementById('factSource');
 
         function showFact() {
-            const fact = facts[factIdx];
+            if (!facts.length) return;
+            const fact = facts[factIdx % facts.length];
             factIcon.textContent = fact.icon;
             factText.textContent = fact.fact;
             factSource.textContent = `— ${fact.source}`;
             factCard.style.transform = 'scale(0.98)';
             setTimeout(() => { factCard.style.transform = ''; }, 150);
         }
-        showFact();
         factCard.addEventListener('click', () => {
             factIdx = (factIdx + 1) % facts.length;
             showFact();
@@ -589,26 +638,17 @@
         setInterval(() => {
             factIdx = (factIdx + 1) % facts.length;
             showFact();
-        }, 12000);
+        }, 15000);
 
         // ---------- WORD ASSOCIATION GAME (multiple choice) ----------
-        const associations = [
-            { prompt: "CAT", options: ["PET", "DOG", "CAR", "BOOK"], accepted: ["PET"] },
-            { prompt: "DOG", options: ["PET", "BONE", "MEOW", "TREE"], accepted: ["PET","BONE"] },
-            { prompt: "LOVE", options: ["HEART", "HATE", "MONEY", "WAR"], accepted: ["HEART"] },
-            { prompt: "INDIA", options: ["COUNTRY", "CITY", "OCEAN", "MOUNTAIN"], accepted: ["COUNTRY"] },
-            { prompt: "SUN", options: ["STAR", "PLANET", "MOON", "CLOUD"], accepted: ["STAR"] },
-            { prompt: "MOON", options: ["SATELLITE", "STAR", "TIDE", "NIGHT"], accepted: ["SATELLITE","NIGHT"] },
-            { prompt: "WATER", options: ["DRINK", "FIRE", "EARTH", "AIR"], accepted: ["DRINK"] },
-            { prompt: "BOOK", options: ["READ", "EAT", "THROW", "BUY"], accepted: ["READ"] },
-        ];
-        let currentAssoc = associations[Math.floor(Math.random() * associations.length)];
+        let currentAssoc = null;
         const assocPrompt = document.getElementById('assocPrompt');
         const assocOptions = document.getElementById('assocOptions');
         const assocFeedback = document.getElementById('assocFeedback');
         const newAssocBtn = document.getElementById('newAssoc');
 
         function loadAssociation() {
+            if (!associations.length) return;
             currentAssoc = associations[Math.floor(Math.random() * associations.length)];
             assocPrompt.textContent = currentAssoc.prompt;
             assocOptions.innerHTML = '';
@@ -618,18 +658,17 @@
                 btn.textContent = opt;
                 btn.addEventListener('click', () => {
                     if (btn.classList.contains('correct') || btn.classList.contains('wrong')) return;
-                    // disable all options
                     assocOptions.querySelectorAll('.assoc-option').forEach(b => b.style.pointerEvents = 'none');
                     if (currentAssoc.accepted.includes(opt)) {
                         btn.classList.add('correct');
                         assocFeedback.innerHTML = '✅ Nice association!';
                         assocFeedback.style.color = 'var(--green)';
+                        addXP(10);                          // REWARD
                         setTimeout(loadAssociation, 2000);
                     } else {
                         btn.classList.add('wrong');
                         assocFeedback.innerHTML = '❌ Not quite – try again!';
                         assocFeedback.style.color = 'var(--red)';
-                        // re‑enable after a moment
                         setTimeout(() => {
                             assocOptions.querySelectorAll('.assoc-option').forEach(b => {
                                 b.style.pointerEvents = 'auto';
@@ -643,27 +682,17 @@
             });
             assocFeedback.textContent = '';
         }
-        loadAssociation();
         newAssocBtn.addEventListener('click', loadAssociation);
 
-        // ---------- GUESS THE WORD (updated themes) ----------
-        const guessWords = [
-            { definition: "A four‑legged animal that says 'meow'.", options: ["Cat", "Dog", "Bird", "Fish"], correct: 0 },
-            { definition: "A loyal animal that barks.", options: ["Dog", "Cat", "Rabbit", "Hamster"], correct: 0 },
-            { definition: "A feeling of strong affection toward someone.", options: ["Love", "Anger", "Fear", "Sadness"], correct: 0 },
-            { definition: "The supreme being in many religions.", options: ["God", "Human", "Angel", "Ghost"], correct: 0 },
-            { definition: "The country known for the Taj Mahal.", options: ["India", "China", "USA", "Brazil"], correct: 0 },
-            { definition: "A small furry pet that purrs.", options: ["Cat", "Turtle", "Parrot", "Snake"], correct: 0 },
-            { definition: "Man's best friend.", options: ["Dog", "Cat", "Fish", "Bird"], correct: 0 },
-            { definition: "A figure of speech using 'like' or 'as'.", options: ["Simile", "Metaphor", "Alliteration", "Hyperbole"], correct: 0 },
-        ];
-        let currentGuess = guessWords[Math.floor(Math.random() * guessWords.length)];
+        // ---------- GUESS THE WORD ----------
+        let currentGuess = null;
         const guessDef = document.getElementById('guessDef');
         const guessOptions = document.getElementById('guessOptions');
         const guessFeedback = document.getElementById('guessFeedback');
         const newGuessBtn = document.getElementById('newGuessWord');
 
         function loadGuessWord() {
+            if (!guessWords.length) return;
             currentGuess = guessWords[Math.floor(Math.random() * guessWords.length)];
             guessDef.textContent = currentGuess.definition;
             guessOptions.innerHTML = '';
@@ -679,6 +708,7 @@
                         btn.classList.add('correct');
                         guessFeedback.textContent = '✅ Correct!';
                         guessFeedback.style.color = 'var(--green)';
+                        addXP(10);                          // REWARD
                         setTimeout(loadGuessWord, 2000);
                     } else {
                         btn.classList.add('wrong');
@@ -690,20 +720,15 @@
             });
             guessFeedback.textContent = '';
         }
-        loadGuessWord();
         newGuessBtn.addEventListener('click', loadGuessWord);
 
-        // ---------- QUOTE ----------
-        const quotes = [
-            { text: "The beautiful thing about learning is nobody can take it away from you.", author: "B.B. King" },
-            { text: "Education is the passport to the future.", author: "Malcolm X" },
-            { text: "The expert in anything was once a beginner.", author: "Helen Hayes" },
-            { text: "In learning you will teach, and in teaching you will learn.", author: "Phil Collins" },
-            { text: "Live as if you were to die tomorrow. Learn as if you were to live forever.", author: "Mahatma Gandhi" },
-        ];
-        const quote = quotes[Math.floor(Math.random() * quotes.length)];
-        document.getElementById('quoteText').textContent = `“${quote.text}”`;
-        document.getElementById('quoteAuthor').textContent = `— ${quote.author}`;
+        // ---------- RANDOM QUOTE ----------
+        function showRandomQuote() {
+            if (!quotes.length) return;
+            const q = quotes[Math.floor(Math.random() * quotes.length)];
+            document.getElementById('quoteText').textContent = `“${q.text}”`;
+            document.getElementById('quoteAuthor').textContent = `— ${q.author}`;
+        }
 
         // ---------- CONFETTI (unchanged) ----------
         const canvas = document.getElementById('confettiCanvas');
@@ -760,7 +785,7 @@
             else { canvas.classList.remove('active'); ctx.clearRect(0,0,canvas.width,canvas.height); }
         }
 
-        // ===== QUIZ ENGINE (unchanged) =====
+        // ===== QUIZ ENGINE (with XP rewards) =====
         let questions = [], currentIndex = 0, score = 0, xp = 0, streak = 0, highestStreak = 0;
         let answered = false, totalAttempted = 0, total = 0;
         const quizInner = document.getElementById('quizInner');
@@ -862,6 +887,7 @@
                     if (streak > highestStreak) highestStreak = streak;
                     feedback.innerHTML = `✅ Correct! <span style="display:block;font-size:0.9rem;margin-top:0.2rem;">${q.fact}</span>`;
                     feedback.className = 'feedback correct';
+                    addXP(10);                          // REWARD
                     if (streak >= 3) setTimeout(() => launchConfetti(120), 100);
                 } else {
                     streak = 0;
@@ -914,7 +940,6 @@
             answered = false; totalAttempted = 0; total = questions.length;
             renderQuiz();
         }
-        startNewQuiz();
 
         // ---------- NAVIGATION ----------
         const sections = document.querySelectorAll('section[id]');
@@ -934,6 +959,9 @@
                 if (target) target.scrollIntoView({ behavior: 'smooth' });
             });
         });
+
+        // Start everything
+        fetchAllContent();
     </script>
 </body>
 </html>

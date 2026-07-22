@@ -30,4 +30,8 @@ router.get('/sse/poll', isAuthenticated, poll.poll);
 const questionsController = require('../controllers/questionsController');
 router.get('/api/questions/random', questionsController.getRandomQuestions);
 
+const contentController = require('../controllers/contentController');
+router.get('/api/content', contentController.getContentByType);
+
+
 module.exports = router;
