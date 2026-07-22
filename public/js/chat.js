@@ -4,6 +4,7 @@ const messageEls = new Map();            // id → DOM element
 let lastSync = null;
 let replyToId = null;
 let tempMsgCounter = -1;
+let editingMessageId = null;            // track the message currently being edited
 
 // ---- scroll state ----
 let isNearBottom = true;   // true if the user is following the latest messages
@@ -74,20 +75,24 @@ function buildMsgHTML(msg) {
 
 // ---- update only the parts that changed in an existing element ----
 function updateMsgElement(el, msg) {
-  // text
-  const textDiv = el.querySelector('.message-text');
-  if (textDiv && textDiv.textContent !== msg.text) {
-    textDiv.textContent = msg.text;
+  // If this message is currently being edited, skip ONLY the text update
+  const isEditing = msg.id === editingMessageId;
+
+  // Update text only if NOT editing
+  if (!isEditing) {
+    const textDiv = el.querySelector('.message-text');
+    if (textDiv && textDiv.textContent !== msg.text) {
+      textDiv.textContent = msg.text;
+    }
   }
 
-  // time + edited badge
+  // Always update the following metadata (they don't interfere with the edit area)
   const timeSpan = el.querySelector('.message-time');
   if (timeSpan) {
     const newTimeHTML = formatTime(msg.timestamp) + (msg.edited ? '<span class="edited-badge">(edited)</span>' : '');
     if (timeSpan.innerHTML !== newTimeHTML) timeSpan.innerHTML = newTimeHTML;
   }
 
-  // read receipt (rasuv own messages)
   if (currentUser.id === 1 && msg.senderId === 1) {
     const readEl = el.querySelector('.read-receipt');
     const readText = msg.readBy && msg.readBy.length > 0 ? '✓✓' : '✓';
@@ -105,7 +110,7 @@ function updateMsgElement(el, msg) {
     }
   }
 
-  // likes
+  // Update likes
   const likeBtn = el.querySelector('.message-like .like-btn');
   const likeCountSpan = el.querySelector('.like-count');
   if (likeBtn && likeCountSpan) {
@@ -378,10 +383,20 @@ function cancelReply() {
 function enterEditMode(id) {
   const msg = messagesMap.get(id);
   if (!msg || msg.senderId !== currentUser.id || msg.deleted) return;
+
+  // Cancel any previous edit mode
+  if (editingMessageId !== null) {
+    // Just restore the old text (we won't save it)
+    editingMessageId = null;
+  }
+
   const el = messageEls.get(id);
   if (!el) return;
   const textDiv = el.querySelector('.message-text');
   if (!textDiv) return;
+
+  editingMessageId = id;   // protect from polling updates
+
   textDiv.innerHTML = `
     <div class="edit-container">
       <textarea id="editInput">${msg.text}</textarea>
@@ -390,12 +405,22 @@ function enterEditMode(id) {
         <button class="cancel-edit" id="cancelEdit">Cancel</button>
       </div>
     </div>`;
+
+  // Stop clicks inside the edit box from toggling actions
+  document.getElementById('editInput').addEventListener('click', e => e.stopPropagation());
+  document.querySelector('.edit-container').addEventListener('click', e => e.stopPropagation());
+
   document.getElementById('saveEdit').onclick = async () => {
     const newText = document.getElementById('editInput').value.trim();
+    editingMessageId = null;   // unprotect
     if (newText) await editMessage(id, newText);
-    syncMessages();   // exit edit mode
+    else syncMessages();       // if empty, just revert the UI
   };
-  document.getElementById('cancelEdit').onclick = () => syncMessages();
+
+  document.getElementById('cancelEdit').onclick = () => {
+    editingMessageId = null;
+    syncMessages();            // revert to normal view
+  };
 }
 
 // ---- polling (smart unread count & auto‑scroll) ----
@@ -562,6 +587,44 @@ document.getElementById('newMessagesBtn')?.addEventListener('click', () => {
   }
 });
 
+// ---- refresh chat ----
+async function refreshChat() {
+  const btn = document.getElementById('refreshChatBtn');
+  if (btn) {
+    btn.textContent = '⏳ Refreshing…';
+    btn.disabled = true;
+  }
+
+  messagesMap.clear();
+  messageEls.clear();
+  lastSync = null;
+  unreadCount = 0;
+  editingMessageId = null;
+  updateNewMessagesButton();
+
+  const container = document.getElementById('messagesContainer');
+  if (container) container.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/messages');
+    if (!res.ok) throw new Error('Refresh failed');
+    const msgs = await res.json();
+    msgs.forEach(m => messagesMap.set(m.id, m));
+    syncMessages(true);
+    const sorted = msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    lastSync = sorted.length > 0 ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
+  } catch (err) {
+    console.error('Refresh error:', err);
+    alert('Failed to refresh chat. Please try again.');
+  } finally {
+    if (btn) {
+      btn.innerHTML = '<span>🔄</span> Refresh';
+      btn.disabled = false;
+    }
+  }
+}
+document.getElementById('refreshChatBtn')?.addEventListener('click', refreshChat);
+
 // ---- form submit ----
 document.getElementById('messageForm').addEventListener('submit', e => {
   e.preventDefault();
@@ -578,52 +641,6 @@ document.getElementById('emojiBtn')?.addEventListener('click', () => {
   alert('Emoji picker coming soon!');
 });
 
-
-// … (keep all your existing code up to the start call) …
-
-// ---- 🆕 Refresh chat manually ----
-async function refreshChat() {
-  // Show a brief visual feedback
-  const btn = document.getElementById('refreshChatBtn');
-  if (btn) {
-    btn.textContent = '⏳ Refreshing…';
-    btn.disabled = true;
-  }
-
-  // Reset all local state
-  messagesMap.clear();
-  messageEls.clear();
-  lastSync = null;            // force full re-fetch on next poll
-  unreadCount = 0;
-  updateNewMessagesButton();
-
-  // Clear the container
-  const container = document.getElementById('messagesContainer');
-  if (container) container.innerHTML = '';
-
-  try {
-    const res = await fetch('/api/messages');
-    if (!res.ok) throw new Error('Refresh failed');
-    const msgs = await res.json();
-    msgs.forEach(m => messagesMap.set(m.id, m));
-    syncMessages(true);   // rebuild UI, scroll to bottom
-    const sorted = msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    lastSync = sorted.length > 0 ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
-  } catch (err) {
-    console.error('Refresh error:', err);
-    alert('Failed to refresh chat. Please try again.');
-  } finally {
-    if (btn) {
-      btn.innerHTML = '<span>🔄</span> Refresh';
-      btn.disabled = false;
-    }
-  }
-}
-
-// ---- Attach refresh button listener ----
-document.getElementById('refreshChatBtn')?.addEventListener('click', refreshChat);
-
-// … (the rest of your existing listeners and start) …
 // ---- start ----
 loadInitial().finally(() => {
   setInterval(poll, 500);

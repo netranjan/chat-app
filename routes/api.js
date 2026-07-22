@@ -12,10 +12,10 @@ router.post('/login', auth.login);
 router.get('/api/messages', isAuthenticated, msg.getMessages);
 router.post('/messages', isAuthenticated, msg.sendMessage);
 router.put('/messages/:id', isAuthenticated, msg.editMessage);
+router.delete('/messages/all', isAuthenticated, msg.deleteAll);   // ← moved up
 router.delete('/messages/:id', isAuthenticated, msg.deleteMessage);
 router.post('/messages/:id/like', isAuthenticated, msg.likeMessage);
 router.post('/messages/:id/read', isAuthenticated, msg.markRead);
-router.delete('/messages/all', isAuthenticated, msg.deleteAll);
 router.get('/messages/:id', isAuthenticated, msg.getMessage);
 
 // Status
@@ -26,6 +26,7 @@ router.get('/status/all', isAuthenticated, status.getAllStatuses);
 
 // Polling
 router.get('/sse/poll', isAuthenticated, poll.poll);
+
 const questionsController = require('../controllers/questionsController');
 router.get('/api/questions/random', questionsController.getRandomQuestions);
 
