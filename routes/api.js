@@ -1,13 +1,12 @@
 const router = require('express').Router();
-const auth = require('../controllers/authController');
 const msg = require('../controllers/messageController');
 const status = require('../controllers/statusController');
 const poll = require('../controllers/pollController');
+const auth = require('../controllers/authController');
 const { isAuthenticated } = require('../middleware/auth');
 
 // Auth
 router.post('/login', auth.login);
-router.get('/logout', auth.logout);
 
 // Messages
 router.get('/api/messages', isAuthenticated, msg.getMessages);
@@ -27,5 +26,7 @@ router.get('/status/all', isAuthenticated, status.getAllStatuses);
 
 // Polling
 router.get('/sse/poll', isAuthenticated, poll.poll);
+const questionsController = require('../controllers/questionsController');
+router.get('/api/questions/random', questionsController.getRandomQuestions);
 
 module.exports = router;
