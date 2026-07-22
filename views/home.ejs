@@ -64,21 +64,23 @@
             overflow-x: hidden;
         }
 
-        /* Live background animation */
+        /* Live background – more vivid */
         .live-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none;
         }
         .live-bg span {
             position: absolute; display: block; border-radius: 50%;
-            opacity: 0.12; animation: float 30s infinite ease-in-out;
+            opacity: 0.15; animation: float 25s infinite ease-in-out;
         }
-        .live-bg span:nth-child(1) { left: 15%; top: 25%; width: 120px; height: 120px; background: var(--primary); animation-delay: 0s; }
-        .live-bg span:nth-child(2) { left: 70%; top: 60%; width: 150px; height: 150px; background: var(--accent); animation-delay: -8s; }
-        .live-bg span:nth-child(3) { left: 40%; top: 80%; width: 90px; height: 90px; background: var(--green); animation-delay: -16s; }
-        .live-bg span:nth-child(4) { left: 80%; top: 15%; width: 100px; height: 100px; background: var(--primary); animation-delay: -24s; }
+        .live-bg span:nth-child(1) { left: 10%; top: 30%; width: 180px; height: 180px; background: var(--primary); animation-delay: 0s; animation-duration: 28s; }
+        .live-bg span:nth-child(2) { left: 85%; top: 10%; width: 120px; height: 120px; background: var(--accent); animation-delay: -7s; animation-duration: 32s; }
+        .live-bg span:nth-child(3) { left: 35%; top: 80%; width: 140px; height: 140px; background: var(--green); animation-delay: -14s; animation-duration: 26s; }
+        .live-bg span:nth-child(4) { left: 70%; top: 55%; width: 200px; height: 200px; background: var(--primary); animation-delay: -20s; animation-duration: 34s; }
+        .live-bg span:nth-child(5) { left: 20%; top: 5%; width: 100px; height: 100px; background: var(--accent); animation-delay: -3s; animation-duration: 30s; }
+        .live-bg span:nth-child(6) { left: 90%; top: 85%; width: 160px; height: 160px; background: var(--green); animation-delay: -10s; animation-duration: 38s; }
         @keyframes float {
             0% { transform: translateY(0) rotate(0deg) scale(1); }
-            50% { transform: translateY(-50px) rotate(180deg) scale(1.1); }
+            50% { transform: translateY(-60px) rotate(180deg) scale(1.15); }
             100% { transform: translateY(0) rotate(360deg) scale(1); }
         }
 
@@ -228,30 +230,33 @@
         .fact-card .fact-text { font-size: 1.2rem; font-weight: 600; font-style: italic; }
         .fact-card .fact-source { font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-light); }
 
-        .word-jumble {
+        /* Word Jumble */
+        .word-jumble, .guess-word {
             max-width: 500px; margin: 2rem auto;
             text-align: center; background: var(--card-bg); border-radius: var(--radius);
             padding: 2rem; box-shadow: var(--shadow);
         }
-        .word-jumble h3 { margin-bottom: 1rem; }
         .scrambled-word { font-size: 2.5rem; letter-spacing: 0.3rem; font-weight: 700; margin-bottom: 1rem; }
-        .jumble-input {
+        .jumble-input, .guess-input {
             padding: 0.75rem 1.2rem; border-radius: var(--radius-btn); border: 2px solid #cbd5e1;
             font-size: 1rem; font-family: var(--font); width: 100%; margin-bottom: 1rem;
             background: var(--card-bg); color: var(--text);
             transition: border-color var(--transition);
         }
-        .jumble-input:focus { outline: none; border-color: var(--primary); }
-        .jumble-feedback { font-weight: 600; margin-top: 0.5rem; }
+        .jumble-input:focus, .guess-input:focus { outline: none; border-color: var(--primary); }
+        .jumble-feedback, .guess-feedback { font-weight: 600; margin-top: 0.5rem; }
 
-        /* Shimmer loading */
-        .shimmer {
-            background: linear-gradient(90deg, var(--card-bg) 25%, rgba(255,255,255,0.1) 50%, var(--card-bg) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: var(--radius-sm);
+        /* Guess the Word (multiple choice) */
+        .guess-options { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; margin: 1rem 0; }
+        .guess-option {
+            padding: 0.7rem 1.5rem; border-radius: var(--radius-btn); border: 2px solid #cbd5e1;
+            background: var(--card-bg); color: var(--text); font-weight: 500; cursor: pointer;
+            transition: all var(--transition); min-width: 120px;
         }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .guess-option:hover { border-color: var(--primary); background: #f1f5f9; }
+        .guess-option.selected { border-color: var(--primary); background: #ede9fe; }
+        .guess-option.correct { border-color: var(--green); background: #d1fae5; }
+        .guess-option.wrong { border-color: var(--red); background: #fee2e2; }
 
         /* Footer */
         footer {
@@ -264,7 +269,6 @@
             gap: 6px; margin-top: 1rem;
             position: relative;
         }
-        /* Circular animation to attract click */
         .footer-btn::after {
             content: '';
             position: absolute;
@@ -295,7 +299,7 @@
 <body>
     <!-- Live background animation -->
     <div class="live-bg">
-        <span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
     </div>
 
     <div class="header">
@@ -305,6 +309,7 @@
                 <a href="#quiz" data-section="quiz">Quiz</a>
                 <a href="#funfact" data-section="funfact">Fun Fact</a>
                 <a href="#wordjumble" data-section="wordjumble">Word Jumble</a>
+                <a href="#guessword" data-section="guessword">Guess Word</a>
                 <a href="#contact" class="contact-link">📞 Contact Us</a>
             </nav>
             <button class="dark-toggle" id="darkToggle">🌙</button>
@@ -315,7 +320,7 @@
         <!-- Hero -->
         <section class="hero">
             <h1>Master English, One Step at a Time</h1>
-            <p>Interactive quizzes, engaging word games, and fascinating facts — crafted for 11th‑grade success.</p>
+            <p>Interactive quizzes, fun word games, and fascinating facts — crafted for 11th‑grade success.</p>
         </section>
 
         <!-- Typing Tip -->
@@ -335,7 +340,6 @@
             <p style="text-align:center; color:var(--text-light); margin-bottom:2rem;">10 random questions each round – earn XP and streaks!</p>
             <div class="card quiz-card" id="quizContainer">
                 <div id="quizInner">
-                    <!-- Shimmer loading placeholder -->
                     <div style="display:flex; flex-direction:column; gap:1rem;">
                         <div class="shimmer" style="height:2rem; width:60%;"></div>
                         <div class="shimmer" style="height:1.5rem; width:80%;"></div>
@@ -358,7 +362,7 @@
             </div>
         </section>
 
-        <!-- Word Jumble Section -->
+        <!-- Word Jumble -->
         <section class="section fade-up" id="wordjumble">
             <h2 style="text-align:center; margin-bottom:1.5rem;">🎲 Word Jumble</h2>
             <div class="word-jumble card">
@@ -371,6 +375,18 @@
                     <button class="btn btn--outline" id="newJumble">New Word</button>
                 </div>
                 <p class="jumble-feedback" id="jumbleFeedback"></p>
+            </div>
+        </section>
+
+        <!-- Guess the Word (new game) -->
+        <section class="section fade-up" id="guessword">
+            <h2 style="text-align:center; margin-bottom:1.5rem;">🔍 Guess the Word</h2>
+            <div class="guess-word card">
+                <h3>What word matches this definition?</h3>
+                <p id="guessDef" style="font-size:1.2rem; margin:1rem 0; color:var(--text-light);"></p>
+                <div class="guess-options" id="guessOptions"></div>
+                <p class="guess-feedback" id="guessFeedback"></p>
+                <button class="btn btn--outline" id="newGuessWord">New Word</button>
             </div>
         </section>
 
@@ -464,7 +480,7 @@
         }
         typeTip();
 
-        // ---------- FUN FACT (rotates on click / every 10 sec) ----------
+        // ---------- FUN FACT ----------
         const facts = [
             { fact: "The oldest known written language is Sumerian, dating back to 3500 BC.", icon: "🏛️", source: "History of Writing" },
             { fact: "William Shakespeare invented over 1,700 words, including 'bedroom' and 'lonely'.", icon: "🎭", source: "Shakespeare Lexicon" },
@@ -484,7 +500,6 @@
             factIcon.textContent = fact.icon;
             factText.textContent = fact.fact;
             factSource.textContent = `— ${fact.source}`;
-            // Add subtle animation
             factCard.style.transform = 'scale(0.98)';
             setTimeout(() => { factCard.style.transform = ''; }, 150);
         }
@@ -498,14 +513,20 @@
             showFact();
         }, 10000);
 
-        // ---------- WORD JUMBLE ----------
+        // ---------- WORD JUMBLE (easy words) ----------
         const jumbleWords = [
-            { word: "LITERATURE", hint: "The body of written works." },
-            { word: "GRAMMAR", hint: "Rules of a language." },
-            { word: "VOCABULARY", hint: "Collection of words." },
-            { word: "SYNTAX", hint: "Sentence structure." },
-            { word: "METAPHOR", hint: "Figure of speech." },
-            { word: "ALLITERATION", hint: "Repetition of initial sounds." },
+            { word: "CAT", hint: "A small pet that meows." },
+            { word: "DOG", hint: "Man's best friend." },
+            { word: "BOOK", hint: "You read this." },
+            { word: "TREE", hint: "It has leaves and a trunk." },
+            { word: "SUN", hint: "Bright and hot, rises in the east." },
+            { word: "MOON", hint: "Earth's natural satellite." },
+            { word: "FISH", hint: "Swims in water." },
+            { word: "BIRD", hint: "Flies in the sky." },
+            { word: "WATER", hint: "H2O." },
+            { word: "HAPPY", hint: "Feeling joy." },
+            { word: "SMILE", hint: "Curve of your lips when you're glad." },
+            { word: "HOUSE", hint: "Where you live." },
         ];
         let currentWordObj = jumbleWords[Math.floor(Math.random() * jumbleWords.length)];
         const scrambledEl = document.getElementById('scrambledWord');
@@ -520,7 +541,6 @@
                 const j = Math.floor(Math.random() * (i + 1));
                 [arr[i], arr[j]] = [arr[j], arr[i]];
             }
-            // Ensure it's not identical to original
             if (arr.join('') === word) return scrambleWord(word);
             return arr.join('');
         }
@@ -538,7 +558,6 @@
             if (answer === currentWordObj.word) {
                 jumbleFeedback.innerHTML = '✅ Correct! Great job!';
                 jumbleFeedback.style.color = 'var(--green)';
-                // Load new word after a short delay
                 setTimeout(loadJumble, 2000);
             } else {
                 jumbleFeedback.innerHTML = `❌ Try again! Hint: ${currentWordObj.hint}`;
@@ -546,6 +565,52 @@
             }
         });
         newBtn.addEventListener('click', loadJumble);
+
+        // ---------- GUESS THE WORD (new game) ----------
+        const guessWords = [
+            { definition: "A person who writes books.", options: ["Author", "Chef", "Pilot", "Doctor"], correct: 0 },
+            { definition: "A place where you borrow books.", options: ["Library", "Gym", "Café", "Museum"], correct: 0 },
+            { definition: "A word that sounds like the noise it describes (e.g., 'buzz').", options: ["Metaphor", "Onomatopoeia", "Simile", "Alliteration"], correct: 1 },
+            { definition: "To put something into your own words.", options: ["Recite", "Paraphrase", "Pronounce", "Emphasize"], correct: 1 },
+            { definition: "The main character in a story.", options: ["Antagonist", "Protagonist", "Narrator", "Villain"], correct: 1 },
+            { definition: "A figure of speech that compares two unlike things using 'like' or 'as'.", options: ["Metaphor", "Simile", "Hyperbole", "Irony"], correct: 1 },
+        ];
+        let currentGuess = guessWords[Math.floor(Math.random() * guessWords.length)];
+        const guessDef = document.getElementById('guessDef');
+        const guessOptions = document.getElementById('guessOptions');
+        const guessFeedback = document.getElementById('guessFeedback');
+        const newGuessBtn = document.getElementById('newGuessWord');
+
+        function loadGuessWord() {
+            currentGuess = guessWords[Math.floor(Math.random() * guessWords.length)];
+            guessDef.textContent = currentGuess.definition;
+            guessOptions.innerHTML = '';
+            currentGuess.options.forEach((opt, idx) => {
+                const btn = document.createElement('div');
+                btn.className = 'guess-option';
+                btn.textContent = opt;
+                btn.addEventListener('click', () => {
+                    if (btn.classList.contains('correct') || btn.classList.contains('wrong')) return;
+                    // Clear other selections
+                    guessOptions.querySelectorAll('.guess-option').forEach(b => b.classList.remove('selected', 'correct', 'wrong'));
+                    btn.classList.add('selected');
+                    if (idx === currentGuess.correct) {
+                        btn.classList.add('correct');
+                        guessFeedback.textContent = '✅ Correct! Well done!';
+                        guessFeedback.style.color = 'var(--green)';
+                        setTimeout(loadGuessWord, 2000);
+                    } else {
+                        btn.classList.add('wrong');
+                        guessFeedback.textContent = '❌ Incorrect. Try again!';
+                        guessFeedback.style.color = 'var(--red)';
+                    }
+                });
+                guessOptions.appendChild(btn);
+            });
+            guessFeedback.textContent = '';
+        }
+        loadGuessWord();
+        newGuessBtn.addEventListener('click', loadGuessWord);
 
         // ---------- QUOTE ----------
         const quotes = [
@@ -751,7 +816,6 @@
         }
 
         async function startNewQuiz() {
-            // Show shimmer while loading
             quizInner.innerHTML = `<div style="display:flex; flex-direction:column; gap:1rem;">
                 <div class="shimmer" style="height:2rem; width:60%;"></div>
                 <div class="shimmer" style="height:1.5rem; width:80%;"></div>
