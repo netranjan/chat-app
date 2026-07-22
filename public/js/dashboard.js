@@ -7,14 +7,23 @@ const dashboardData = document.getElementById('dashboardData');
 let dashInterval;
 
 dashBtn.addEventListener('click', () => {
-  modal.style.display = 'flex';
+  // Use the 'active' class so the CSS transition works
+  modal.classList.add('active');
   fetchDashboard();
   dashInterval = setInterval(fetchDashboard, 3000);
 });
 
 closeBtn.addEventListener('click', () => {
-  modal.style.display = 'none';
+  modal.classList.remove('active');
   clearInterval(dashInterval);
+});
+
+// Also close when clicking the dark backdrop (outside the content area)
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) {
+    modal.classList.remove('active');
+    clearInterval(dashInterval);
+  }
 });
 
 async function fetchDashboard() {
@@ -23,17 +32,23 @@ async function fetchDashboard() {
     const users = await res.json();
     let html = '';
     users.forEach(u => {
-      html += `<h3>${u.username} (${u.isOnline ? '🟢 Online' : '⚫ Offline'})</h3>`;
+      const onlineClass = u.isOnline ? 'online' : 'offline';
+      const statusText = u.isOnline ? 'Online' : 'Offline';
+      html += `<h3><span class="status-dot ${onlineClass}"></span> ${u.username} – ${statusText}</h3>`;
       html += `<p>Last seen: ${new Date(u.lastSeen).toLocaleString()}</p>`;
       if (u.isTyping) {
         const since = new Date(u.typingUpdatedAt);
-        html += `<p>Typing since: ${since.toLocaleTimeString()}</p>`;
+        html += `<p class="typing-active">Typing since: ${since.toLocaleTimeString()}</p>`;
       }
       if (u.currentLocation && u.username === 'manu') {
-        html += `<p>Location: ${u.currentLocation.city}, ${u.currentLocation.state}, ${u.currentLocation.country}</p>`;
-        html += `<p>ISP: ${u.currentLocation.isp}, IP: ${u.currentLocation.ip}</p>`;
+        html += `<div class="location-details">`;
+        html += `<p>📍 ${u.currentLocation.city}, ${u.currentLocation.state}, ${u.currentLocation.country}</p>`;
+        html += `<p>🌐 ISP: ${u.currentLocation.isp}, IP: ${u.currentLocation.ip}</p>`;
+        html += `</div>`;
       }
     });
     dashboardData.innerHTML = html;
-  } catch(e) {}
+  } catch(e) {
+    // silently ignore errors
+  }
 }

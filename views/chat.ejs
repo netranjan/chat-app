@@ -23,6 +23,9 @@
       </div>
     </div>
     <div class="header-right">
+      <!-- 🆕 Refresh button (always visible) -->
+      <button id="refreshChatBtn" class="header-btn btn-refresh"><span>🔄</span> Refresh</button>
+
       <% if (user.id === 1) { %>
         <button id="dashboardToggle" class="header-btn btn-dashboard">📊 Dashboard</button>
         <button id="clearChatBtn" class="header-btn btn-clear"><span>🗑️</span> Clear</button>
@@ -67,7 +70,7 @@
     </div>
   <% } %>
 
-  <!-- viewport height fix for mobile (so input is never hidden) -->
+  <!-- viewport height fix for mobile -->
   <script>
     function setViewportHeight() {
       document.body.style.height = window.innerHeight + 'px';

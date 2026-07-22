@@ -578,6 +578,52 @@ document.getElementById('emojiBtn')?.addEventListener('click', () => {
   alert('Emoji picker coming soon!');
 });
 
+
+// … (keep all your existing code up to the start call) …
+
+// ---- 🆕 Refresh chat manually ----
+async function refreshChat() {
+  // Show a brief visual feedback
+  const btn = document.getElementById('refreshChatBtn');
+  if (btn) {
+    btn.textContent = '⏳ Refreshing…';
+    btn.disabled = true;
+  }
+
+  // Reset all local state
+  messagesMap.clear();
+  messageEls.clear();
+  lastSync = null;            // force full re-fetch on next poll
+  unreadCount = 0;
+  updateNewMessagesButton();
+
+  // Clear the container
+  const container = document.getElementById('messagesContainer');
+  if (container) container.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/messages');
+    if (!res.ok) throw new Error('Refresh failed');
+    const msgs = await res.json();
+    msgs.forEach(m => messagesMap.set(m.id, m));
+    syncMessages(true);   // rebuild UI, scroll to bottom
+    const sorted = msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    lastSync = sorted.length > 0 ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
+  } catch (err) {
+    console.error('Refresh error:', err);
+    alert('Failed to refresh chat. Please try again.');
+  } finally {
+    if (btn) {
+      btn.innerHTML = '<span>🔄</span> Refresh';
+      btn.disabled = false;
+    }
+  }
+}
+
+// ---- Attach refresh button listener ----
+document.getElementById('refreshChatBtn')?.addEventListener('click', refreshChat);
+
+// … (the rest of your existing listeners and start) …
 // ---- start ----
 loadInitial().finally(() => {
   setInterval(poll, 500);
