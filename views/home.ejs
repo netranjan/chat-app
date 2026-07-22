@@ -15,68 +15,66 @@
     
     <style>
         :root {
-            --bg-soft: #fef7f2;
+            --bg: #fef7f2;
             --card-bg: #ffffff;
-            --text-primary: #2d2b4e;
-            --text-secondary: #5e5a7a;
+            --text: #2d2b4e;
+            --text-light: #5e5a7a;
             --peach: #ff9a8c;
-            --peach-light: #ffd4cc;
-            --mint: #6fcf97;
-            --mint-light: #c8f7d5;
+            --peach-hover: #ff7f6e;
             --lavender: #b4a5f5;
-            --lavender-light: #e4dffc;
+            --mint: #6fcf97;
             --yellow: #ffd166;
-            --shadow-soft: 0 10px 30px rgba(0,0,0,0.06);
-            --shadow-hover: 0 15px 40px rgba(0,0,0,0.1);
+            --shadow-soft: 0 10px 30px rgba(0,0,0,0.05);
+            --shadow-hover: 0 16px 48px rgba(0,0,0,0.1);
             --radius-xl: 32px;
             --radius-lg: 24px;
             --radius-md: 16px;
             --radius-btn: 50px;
             --transition: 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-            --font: 'Nunito', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --font: 'Nunito', system-ui, -apple-system, sans-serif;
+        }
+
+        body.dark {
+            --bg: #1a1a2e;
+            --card-bg: #252541;
+            --text: #eaeaea;
+            --text-light: #b0b0c8;
+            --peach: #ff7f6e;
+            --lavender: #a78bfa;
+            --mint: #6ee7b7;
+            --shadow-soft: 0 10px 30px rgba(0,0,0,0.3);
+            --shadow-hover: 0 16px 48px rgba(0,0,0,0.5);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: var(--font);
-            background: linear-gradient(135deg, #fff3ec 0%, #f3e9ff 100%);
-            color: var(--text-primary);
+            background: var(--bg);
+            color: var(--text);
             line-height: 1.6;
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
-            position: relative;
+            transition: background 0.3s, color 0.3s;
         }
 
-        /* Floating background animation */
         .bg-animation {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: -1;
-            overflow: hidden;
-            pointer-events: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none;
         }
         .bg-animation span {
-            position: absolute;
-            display: block;
-            width: 40px; height: 40px;
-            background: rgba(255,154,140,0.2);
-            border-radius: 50%;
-            animation: float 20s infinite ease-in-out;
+            position: absolute; display: block;
+            border-radius: 50%; opacity: 0.15;
+            animation: float 25s infinite ease-in-out;
         }
-        .bg-animation span:nth-child(1) { left: 10%; top: 20%; width: 60px; height: 60px; animation-delay: 0s; background: rgba(180,165,245,0.15); }
-        .bg-animation span:nth-child(2) { left: 80%; top: 60%; width: 80px; height: 80px; animation-delay: -5s; background: rgba(255,154,140,0.12); }
-        .bg-animation span:nth-child(3) { left: 30%; top: 80%; width: 50px; height: 50px; animation-delay: -10s; background: rgba(111,207,151,0.15); }
-        .bg-animation span:nth-child(4) { left: 70%; top: 10%; width: 70px; height: 70px; animation-delay: -15s; background: rgba(180,165,245,0.1); }
-        .bg-animation span:nth-child(5) { left: 50%; top: 40%; width: 45px; height: 45px; animation-delay: -8s; background: rgba(255,209,102,0.12); }
-        .bg-animation span:nth-child(6) { left: 90%; top: 30%; width: 55px; height: 55px; animation-delay: -12s; background: rgba(255,154,140,0.1); }
-
+        .bg-animation span:nth-child(1) { left: 10%; top: 20%; width: 80px; height: 80px; background: var(--peach); animation-delay: 0s; }
+        .bg-animation span:nth-child(2) { left: 75%; top: 65%; width: 100px; height: 100px; background: var(--lavender); animation-delay: -7s; }
+        .bg-animation span:nth-child(3) { left: 35%; top: 85%; width: 60px; height: 60px; background: var(--mint); animation-delay: -14s; }
+        .bg-animation span:nth-child(4) { left: 85%; top: 15%; width: 70px; height: 70px; background: var(--yellow); animation-delay: -20s; }
         @keyframes float {
-            0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 0.7; }
-            50% { transform: translateY(-30px) rotate(180deg) scale(1.1); opacity: 0.4; }
-            100% { transform: translateY(0) rotate(360deg) scale(1); opacity: 0.7; }
+            0% { transform: translateY(0) rotate(0deg) scale(1); }
+            50% { transform: translateY(-40px) rotate(180deg) scale(1.1); }
+            100% { transform: translateY(0) rotate(360deg) scale(1); }
         }
 
         .cf-container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
@@ -84,287 +82,220 @@
 
         .cf-btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            background: var(--peach);
-            color: #fff;
-            font-weight: 700;
-            font-size: 1rem;
-            padding: 0.85rem 2rem;
-            border: none;
-            border-radius: var(--radius-btn);
-            cursor: pointer;
-            text-decoration: none;
-            transition: all var(--transition);
-            min-height: 54px;
-            min-width: 150px;
-            letter-spacing: 0.3px;
+            background: var(--peach); color: #fff;
+            font-weight: 700; font-size: 1rem; padding: 0.85rem 2rem;
+            border: none; border-radius: var(--radius-btn); cursor: pointer;
+            text-decoration: none; transition: all var(--transition);
+            min-height: 48px; white-space: nowrap;
             box-shadow: 0 6px 20px rgba(255,154,140,0.3);
-            position: relative;
-            overflow: hidden;
         }
-        .cf-btn:hover { background: #ff7f6e; transform: translateY(-3px); box-shadow: 0 12px 30px rgba(255,154,140,0.4); }
+        .cf-btn:hover { background: var(--peach-hover); transform: translateY(-3px); box-shadow: 0 12px 30px rgba(255,154,140,0.4); }
         .cf-btn:active { transform: scale(0.96); }
+        .cf-btn--outline { background: transparent; color: var(--peach); box-shadow: 0 0 0 2px var(--peach); }
+        .cf-btn--outline:hover { background: rgba(255,154,140,0.08); }
         .cf-btn--blue { background: var(--lavender); box-shadow: 0 6px 20px rgba(180,165,245,0.3); }
         .cf-btn--blue:hover { background: #9f8ce8; }
-        .cf-btn--outline {
-            background: transparent; color: var(--peach);
-            box-shadow: 0 0 0 2px var(--peach);
-            min-width: 120px;
-        }
-        .cf-btn--outline:hover { background: rgba(255,154,140,0.08); }
-        .cf-btn--small { min-height: 44px; min-width: 120px; padding: 0.5rem 1.4rem; font-size: 0.95rem; }
         .cf-btn--contact {
             background: var(--mint);
             box-shadow: 0 6px 20px rgba(111,207,151,0.3);
+            padding: 0.5rem 1.4rem;
         }
         .cf-btn--contact:hover { background: #5cb882; }
-        .cf-btn:disabled { opacity: 0.5; pointer-events: none; transform: none !important; }
+        .cf-btn--small { padding: 0.5rem 1.2rem; font-size: 0.9rem; }
 
-        /* Header */
         .cf-header {
             position: sticky; top: 0; z-index: 100;
-            background: rgba(255,255,255,0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background: rgba(255,255,255,0.82); backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(0,0,0,0.03);
             padding: 0.6rem 0;
+            transition: background 0.3s;
         }
-        .cf-header-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+        body.dark .cf-header { background: rgba(37,37,65,0.85); }
+        .cf-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
         .cf-logo {
-            font-weight: 800; font-size: 1.7rem; letter-spacing: -0.5px;
+            font-weight: 800; font-size: 1.7rem;
             background: linear-gradient(135deg, #ff9a8c, #b4a5f5);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
             text-decoration: none;
         }
-        .cf-logo span { font-weight: 600; font-size: 0.85rem; opacity: 0.8; }
-        .cf-nav-wrapper { display: flex; align-items: center; gap: 1.2rem; }
-        .cf-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; font-weight: 600; }
+        .cf-nav { display: flex; align-items: center; gap: 1.5rem; font-weight: 600; flex-wrap: wrap; }
         .cf-nav a {
-            color: var(--text-secondary); text-decoration: none; font-size: 1rem;
-            padding: 0.4rem 0; border-bottom: 3px solid transparent;
-            transition: color var(--transition), border-color var(--transition);
+            color: var(--text-light); text-decoration: none; padding: 0.4rem 0;
+            border-bottom: 3px solid transparent; transition: all var(--transition);
         }
         .cf-nav a:hover, .cf-nav a.cf-active-link { color: var(--peach); border-bottom-color: var(--peach); }
         .cf-contact-link {
-            font-weight: 700;
-            color: #fff !important;
-            text-decoration: none;
-            padding: 0.5rem 1.5rem;
-            border-radius: 40px;
-            background: linear-gradient(135deg, #ff9a8c, #ff7f6e);
+            font-weight: 700; color: #fff !important; padding: 0.5rem 1.5rem;
+            border-radius: 40px; background: linear-gradient(135deg, #ff9a8c, #ff7f6e);
             box-shadow: 0 4px 12px rgba(255, 154, 140, 0.3);
-            transition: background 0.25s ease, transform 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+            transition: all 0.2s;
         }
-        .cf-contact-link:hover { background: linear-gradient(135deg, #ff7f6e, #ff6b58); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 154, 140, 0.4); }
-        .cf-hamburger { display: none; flex-direction: column; gap: 5px; background: transparent; border: none; cursor: pointer; padding: 0.3rem; }
-        .cf-hamburger span { display: block; width: 26px; height: 3px; background: var(--text-primary); border-radius: 4px; transition: all 0.25s; }
-        .cf-hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
-        .cf-hamburger.active span:nth-child(2) { opacity: 0; }
-        .cf-hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+        .cf-contact-link:hover { background: linear-gradient(135deg, #ff7f6e, #ff6b58); transform: translateY(-2px); }
+        .dark-mode-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; padding: 0.3rem; }
 
-        /* Hero */
-        .cf-hero {
-            padding: 3.5rem 0 3rem;
-            text-align: center;
-        }
+        .cf-hero { padding: 4rem 0 3rem; text-align: center; }
         .cf-hero h1 {
             font-size: clamp(2.4rem, 8vw, 4rem); font-weight: 800;
             background: linear-gradient(135deg, #ff7f6e, #b4a5f5);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
             margin-bottom: 0.5rem;
         }
-        .cf-hero p { font-size: 1.15rem; color: var(--text-secondary); max-width: 550px; margin: 0 auto; }
+        .cf-hero p { font-size: 1.15rem; color: var(--text-light); max-width: 550px; margin: 0 auto; }
 
-        /* Daily tip */
-        .daily-tip { padding: 1.8rem 0 0; margin-top: -1rem; }
+        .daily-tip { padding: 1rem 0; }
         .tip-card {
-            background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-soft);
-            padding: 1.5rem 2rem; display: flex; flex-direction: column; align-items: center;
-            text-align: center; gap: 0.5rem; max-width: 700px; margin: 0 auto;
-            border-left: 6px solid var(--peach);
+            background: var(--card-bg); border-radius: var(--radius-lg);
+            padding: 1.8rem 2rem; box-shadow: var(--shadow-soft);
+            max-width: 700px; margin: 0 auto; display: flex; align-items: center; gap: 1rem;
+            border-left: 8px solid var(--peach); transition: all 0.3s;
         }
-        .tip-icon { font-size: 2rem; }
-        .tip-card p { font-size: 1.1rem; color: var(--text-primary); font-weight: 600; line-height: 1.5; }
-        .tip-category { font-size: 0.8rem; background: #fff0eb; color: #ff7f6e; padding: 0.2rem 1rem; border-radius: 40px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .tip-card .tip-icon { font-size: 2.2rem; }
+        .tip-content { flex: 1; }
+        .tip-text { font-size: 1.1rem; font-weight: 600; color: var(--text); min-height: 3rem; }
+        .tip-category { font-size: 0.8rem; background: #fff0eb; color: var(--peach); padding: 0.2rem 1rem; border-radius: 40px; display: inline-block; margin-top: 0.5rem; text-transform: uppercase; font-weight: 700; }
 
-        /* Quiz Section */
-        .cf-quiz { padding: 2rem 0 4rem; }
-        .cf-quiz h2 { font-size: 2.2rem; font-weight: 800; margin-bottom: 0.3rem; }
-        .cf-quiz-sub { color: var(--text-secondary); margin-bottom: 2rem; }
-        .cf-quiz-card {
-            max-width: 800px; margin: 0 auto;
-            background: var(--card-bg); border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-soft); padding: 2.2rem 2rem;
-            position: relative; overflow: hidden; transition: box-shadow var(--transition);
+        .slide-left, .slide-right, .fade-up {
+            opacity: 0; transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .cf-quiz-card:hover { box-shadow: var(--shadow-hover); }
+        .slide-left { transform: translateX(-40px); }
+        .slide-right { transform: translateX(40px); }
+        .fade-up { transform: translateY(40px); }
+        .slide-left.visible, .slide-right.visible, .fade-up.visible {
+            opacity: 1; transform: translate(0);
+        }
 
-        .cf-quiz-progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; font-weight: 600; color: var(--text-secondary); flex-wrap: wrap; gap: 0.5rem; }
-        .cf-badge { background: #fff0eb; color: #ff7f6e; padding: 0.25rem 1rem; border-radius: 40px; font-size: 0.8rem; font-weight: 700; }
-        .cf-xp-badge { background: #e4dffc; color: #7c6fe0; padding: 0.25rem 1rem; border-radius: 40px; font-size: 0.8rem; font-weight: 700; }
-        .cf-progress-bar { width: 100%; height: 6px; background: #f0eef7; border-radius: 10px; margin: 0.8rem 0 1.2rem; overflow: hidden; }
-        .cf-progress-fill { height: 100%; background: linear-gradient(90deg, #ff9a8c, #b4a5f5); border-radius: 10px; transition: width 0.3s ease; width: 0%; }
-        .cf-question-text { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.8rem; color: var(--text-primary); }
-        .cf-options { display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1.2rem; }
-        .cf-option {
-            display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem;
-            background: #faf9ff; border-radius: 100px;
-            border: 2px solid transparent;
-            cursor: pointer; transition: all var(--transition); font-size: 1rem; user-select: none;
-        }
-        .cf-option:hover:not(.cf-disabled) { background: #f0edff; border-color: var(--lavender); transform: translateX(4px); }
-        .cf-option input[type="radio"] {
-            appearance: none; width: 22px; height: 22px; border: 2px solid #d4d0e8;
-            border-radius: 50%; flex-shrink: 0; transition: all 0.2s; cursor: pointer; margin: 0;
-        }
-        .cf-option input[type="radio"]:checked { border-color: var(--lavender); background: var(--lavender); }
-        .cf-option input[type="radio"]:checked::after { content: ''; display: block; width: 10px; height: 10px; background: white; border-radius: 50%; margin: 4px; }
-        .cf-option label { flex: 1; cursor: pointer; font-weight: 600; margin: 0; }
-        .cf-option.cf-correct { background: #e6ffee; border-color: #6fcf97; }
-        .cf-option.cf-wrong { background: #ffeaea; border-color: #ff7f6e; }
-        .cf-option.cf-disabled { pointer-events: none; opacity: 0.8; }
-
-        .cf-quiz-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.8rem; }
-        .cf-feedback {
-            font-weight: 600; padding: 0.6rem 1.4rem; border-radius: 40px;
-            background: #f0eef7; color: var(--text-secondary); flex: 1; min-width: 150px;
-        }
-        .cf-feedback.cf-correct-text { background: #e6ffee; color: #1e7b4b; }
-        .cf-feedback.cf-wrong-text { background: #ffeaea; color: #c0392b; }
-        .cf-quiz-result { text-align: center; padding: 1.6rem 0; position: relative; z-index: 2; }
-        .cf-quiz-result h3 { font-size: 2rem; color: var(--peach); }
-        .cf-quiz-result p { font-size: 1.2rem; color: var(--text-secondary); }
-        .cf-quiz-result .cf-result-emoji { font-size: 4rem; display: block; margin-bottom: 0.4rem; }
-        .cf-quiz-result .cf-result-grade { font-size: 2rem; font-weight: 700; color: var(--peach); margin: 0.4rem 0; }
-        .cf-quiz-result .cf-result-stats { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 1.2rem; }
-        .cf-streak-fire { font-size: 1.3rem; color: #ff6f00; margin-left: 0.4rem; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
-
-        /* Study sections */
         .study-section {
-            background: var(--card-bg);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-soft);
-            padding: 2rem;
-            margin: 2rem auto;
-            max-width: 800px;
+            background: var(--card-bg); border-radius: var(--radius-xl);
+            padding: 2rem; margin: 2rem auto; max-width: 800px;
+            box-shadow: var(--shadow-soft); transition: all 0.3s;
         }
-        .study-section h3 { font-size: 1.6rem; font-weight: 800; margin-bottom: 1rem; color: var(--text-primary); }
-        .study-section p, .study-section li { color: var(--text-secondary); line-height: 1.7; margin-bottom: 0.6rem; }
-        .study-section ul { list-style: '✅ '; padding-left: 1.5rem; }
+        .study-section h3 { font-size: 1.6rem; font-weight: 800; margin-bottom: 1rem; }
+        .study-section p, .study-section li { color: var(--text-light); }
         .study-card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.5rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;
         }
         .study-card {
             background: linear-gradient(135deg, #faf9ff, #f0edff);
-            border-radius: var(--radius-md);
-            padding: 1.5rem;
-            text-align: center;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: transform var(--transition);
+            border-radius: var(--radius-md); padding: 1.5rem; text-align: center;
+            font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
         }
-        .study-card:hover { transform: translateY(-4px); }
+        .study-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-hover); }
         .study-card span { font-size: 2.2rem; display: block; margin-bottom: 0.5rem; }
 
-        /* Contact */
-        #contact {
-            background: #ffffffd6; backdrop-filter: blur(12px);
-            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-            margin-top: 3rem; padding: 3rem 0 4rem;
+        .cf-quiz { padding: 2rem 0; }
+        .cf-quiz h2 { font-size: 2.2rem; font-weight: 800; margin-bottom: 0.3rem; }
+        .cf-quiz-sub { color: var(--text-light); margin-bottom: 2rem; }
+        .cf-quiz-card {
+            max-width: 800px; margin: 0 auto;
+            background: var(--card-bg); border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-soft); padding: 2.2rem 2rem; transition: box-shadow 0.3s;
         }
-        #contact h2 { font-size: 2.2rem; font-weight: 800; color: var(--text-primary); }
-        .contact-card {
-            background: white; border-radius: var(--radius-lg); padding: 2rem;
-            box-shadow: var(--shadow-soft); max-width: 500px; margin: 0 auto; text-align: center;
+        .cf-quiz-card:hover { box-shadow: var(--shadow-hover); }
+        .cf-quiz-progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; font-weight: 600; color: var(--text-light); flex-wrap: wrap; gap: 0.5rem; }
+        .cf-badge { background: #fff0eb; color: #ff7f6e; padding: 0.25rem 1rem; border-radius: 40px; font-size: 0.8rem; font-weight: 700; }
+        .cf-xp-badge { background: #e4dffc; color: #7c6fe0; padding: 0.25rem 1rem; border-radius: 40px; font-size: 0.8rem; font-weight: 700; }
+        .cf-progress-bar { width: 100%; height: 6px; background: #f0eef7; border-radius: 10px; margin: 0.8rem 0 1.2rem; overflow: hidden; }
+        .cf-progress-fill { height: 100%; background: linear-gradient(90deg, #ff9a8c, #b4a5f5); border-radius: 10px; transition: width 0.3s; }
+        .cf-question-text { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.8rem; }
+        .cf-options { display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1.2rem; }
+        .cf-option {
+            display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem;
+            background: #faf9ff; border-radius: 100px; border: 2px solid transparent;
+            cursor: pointer; transition: all 0.3s; font-size: 1rem; user-select: none;
         }
-        .contact-card a { color: var(--lavender); font-weight: 700; text-decoration: none; }
+        .cf-option:hover:not(.cf-disabled) { background: #f0edff; border-color: var(--lavender); transform: translateX(4px); }
+        .cf-option input[type="radio"] { appearance: none; width: 22px; height: 22px; border: 2px solid #d4d0e8; border-radius: 50%; flex-shrink: 0; cursor: pointer; transition: 0.2s; }
+        .cf-option input[type="radio"]:checked { border-color: var(--lavender); background: var(--lavender); }
+        .cf-option label { flex: 1; cursor: pointer; font-weight: 600; }
+        .cf-option.cf-correct { background: #e6ffee; border-color: #6fcf97; }
+        .cf-option.cf-wrong { background: #ffeaea; border-color: #ff7f6e; }
+        .cf-option.cf-disabled { pointer-events: none; opacity: 0.8; }
+        .cf-quiz-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.8rem; }
+        .cf-feedback { font-weight: 600; padding: 0.6rem 1.4rem; border-radius: 40px; background: #f0eef7; color: var(--text-light); flex: 1; min-width: 150px; }
+        .cf-feedback.cf-correct-text { background: #e6ffee; color: #1e7b4b; }
+        .cf-feedback.cf-wrong-text { background: #ffeaea; color: #c0392b; }
+        .cf-quiz-result { text-align: center; padding: 1.6rem 0; }
+        .cf-quiz-result h3 { font-size: 2rem; color: var(--peach); }
+        .cf-streak-fire { font-size: 1.3rem; color: #ff6f00; margin-left: 0.4rem; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
-        .cf-footer {
-            background: var(--text-primary); color: rgba(255,255,255,0.8);
-            padding: 2.5rem 0 2rem; text-align: center; border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-            margin-top: -1px;
+        .vocab-box, .streak-box, .quote-box {
+            background: var(--card-bg); border-radius: var(--radius-lg);
+            padding: 1.5rem; margin: 1.5rem auto; max-width: 700px;
+            box-shadow: var(--shadow-soft); display: flex; align-items: center; gap: 1rem;
         }
-        .cf-footer-brand { font-weight: 800; font-size: 1.6rem; color: white; }
-        .cf-footer-disclaimer { font-size: 0.9rem; opacity: 0.7; max-width: 400px; margin: 0.5rem auto; }
-        .cf-footer-buttons { margin-top: 1rem; }
+        .vocab-box .word { font-size: 1.8rem; font-weight: 800; color: var(--peach); }
+        .vocab-box .def { color: var(--text-light); }
+        .streak-box { justify-content: center; flex-wrap: wrap; }
+        .streak-day { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+        .streak-day span { font-size: 1.4rem; }
+        .streak-day small { font-size: 0.8rem; color: var(--text-light); }
+        .quote-box { font-style: italic; color: var(--text-light); text-align: center; display: block; }
+        .quote-box p { font-size: 1.2rem; }
+        .quote-box small { display: block; margin-top: 0.5rem; }
+
+        #contact { text-align: center; padding: 3rem 0; }
+        .contact-card { background: var(--card-bg); border-radius: var(--radius-lg); padding: 2rem; max-width: 500px; margin: 0 auto; box-shadow: var(--shadow-soft); }
+        .cf-footer { background: var(--text); color: rgba(255,255,255,0.8); padding: 2rem 0; text-align: center; }
+
+        @media (max-width: 768px) {
+            .cf-nav { flex-direction: column; align-items: flex-start; background: var(--card-bg); padding: 1rem; border-radius: var(--radius-md); position: absolute; top: 70px; right: 20px; display: none; }
+            .cf-nav.open { display: flex; }
+            .cf-hamburger { display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
+            .cf-hamburger span { width: 26px; height: 3px; background: var(--text); }
+            .cf-header-inner { position: relative; }
+        }
 
         #confettiCanvas { position: fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:9999; display:none; }
         #confettiCanvas.active { display:block; }
-
-        @media (max-width: 768px) {
-            .cf-hamburger { display: flex; order:3; }
-            .cf-nav-wrapper { order:4; flex-basis:100%; display:none; flex-direction:column; background:white; padding:1rem 0; margin-top:0.4rem; }
-            .cf-nav-wrapper.open { display:flex; }
-            .cf-nav { flex-direction:column; gap:0.8rem; }
-            .cf-nav a { border-bottom:none; border-left:4px solid transparent; padding:0.6rem 1rem; }
-            .cf-nav a:hover { border-left-color: var(--peach); }
-            .cf-hero h1 { font-size:2.2rem; }
-            .cf-quiz-card, .study-section, .tip-card { padding:1.6rem; }
-            .cf-question-text { font-size:1.2rem; }
-            .cf-option { padding:0.8rem 1.2rem; }
-            .cf-quiz-actions { flex-direction:column; align-items:stretch; }
-            .cf-quiz-actions .cf-btn { width:100%; }
-            .cf-feedback { min-width:auto; }
-        }
-        @media (max-width: 480px) {
-            .cf-container { padding:0 16px; }
-            .cf-btn { min-width:120px; padding:0.7rem 1.4rem; font-size:0.95rem; }
-            .cf-hero { padding:2.4rem 0 2rem; }
-            .cf-quiz-card, .study-section { padding:1.2rem; }
-        }
     </style>
 </head>
 <body>
-    <!-- Floating background animation -->
-    <div class="bg-animation">
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-    </div>
+    <div class="bg-animation"><span></span><span></span><span></span><span></span></div>
 
-    <!-- Header -->
     <header class="cf-header">
         <div class="cf-container cf-header-inner">
             <a href="/" class="cf-logo">📚 LitMaster</a>
-            <button class="cf-hamburger" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false">
-                <span></span><span></span><span></span>
-            </button>
-            <div class="cf-nav-wrapper" id="navWrapper">
-                <nav class="cf-nav">
-                    <a href="#quiz" data-section="quiz" class="cf-active-link">✨ Quiz</a>
-                    <a href="#grammar" data-section="grammar">📖 Grammar</a>
-                    <a href="#writing" data-section="writing">📝 Writing</a>
-                    <a href="#resources" data-section="resources">📚 Resources</a>
-                    <a href="#contact" class="cf-contact-link">📞 Contact Us</a>
-                </nav>
-            </div>
+            <button class="cf-hamburger" id="hamburgerBtn">☰</button>
+            <nav class="cf-nav" id="navMenu">
+                <a href="#quiz" data-section="quiz">✨ Quiz</a>
+                <a href="#grammar" data-section="grammar">📖 Grammar</a>
+                <a href="#writing" data-section="writing">📝 Writing</a>
+                <a href="#resources" data-section="resources">📚 Resources</a>
+                <a href="#contact" class="cf-contact-link">📞 Contact Us</a>
+            </nav>
+            <button class="dark-mode-btn" id="darkModeToggle">🌙</button>
         </div>
     </header>
 
-    <!-- Hero -->
     <section class="cf-hero">
         <div class="cf-container">
             <h1>Master English, One Step at a Time</h1>
-            <p>Interactive quizzes, grammar tips, and writing prompts tailored for 11th‑grade students. Boost your language skills while having fun! ✍️</p>
+            <p>Interactive quizzes, useful study tools, and daily tips – crafted for 11th‑grade success.</p>
         </div>
     </section>
 
-    <!-- Daily Tip -->
-    <section class="daily-tip" id="dailyTip">
+    <section class="daily-tip">
         <div class="cf-container">
             <div class="tip-card">
                 <span class="tip-icon">💡</span>
-                <p id="tipText">Loading a great study tip for you...</p>
-                <span class="tip-category" id="tipCategory"></span>
+                <div class="tip-content">
+                    <p class="tip-text" id="typingTip"></p>
+                    <span class="tip-category" id="tipCategory"></span>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Quiz -->
+    <section id="vocab" class="vocab-box slide-left">
+        <span style="font-size:2rem;">📖</span>
+        <div>
+            <div class="word" id="vocabWord">Ephemeral</div>
+            <div class="def" id="vocabDef">Lasting for a very short time.</div>
+        </div>
+    </section>
+
     <section class="cf-quiz" id="quiz">
         <div class="cf-container">
             <h2 class="cf-text-center">🧠 Quick Knowledge Check</h2>
@@ -375,125 +306,74 @@
         </div>
     </section>
 
-    <!-- Grammar Quick Tips -->
-    <section id="grammar" class="study-section">
+    <section id="grammar" class="study-section slide-right">
         <h3>📖 Grammar Quick Tips</h3>
         <div class="study-card-grid">
-            <div class="study-card"><span>🔤</span><strong>Subject‑Verb Agreement</strong><br>Singular subjects need singular verbs. Example: "She writes." not "She write."</div>
-            <div class="study-card"><span>🕰️</span><strong>Tenses</strong><br>Use present perfect for actions with present relevance: "I have finished my homework."</div>
-            <div class="study-card"><span>📌</span><strong>Articles</strong><br>Use "the" for specific things, "a/an" for general. "The book on the table is mine."</div>
-            <div class="study-card"><span>🧩</span><strong>Prepositions</strong><br>Common pairs: "interested in", "good at", "afraid of".</div>
+            <div class="study-card"><span>🔤</span><strong>Subject-Verb Agreement</strong><br>Singular subjects need singular verbs.</div>
+            <div class="study-card"><span>🕰️</span><strong>Tenses</strong><br>Present perfect: "I have finished my homework."</div>
+            <div class="study-card"><span>📌</span><strong>Articles</strong><br>"The" for specific, "a/an" for general.</div>
+            <div class="study-card"><span>🧩</span><strong>Prepositions</strong><br>Common pairs: "interested in", "good at".</div>
         </div>
     </section>
 
-    <!-- Writing Prompts -->
-    <section id="writing" class="study-section">
+    <section id="writing" class="study-section slide-left">
         <h3>📝 Writing Prompts</h3>
-        <p>Stuck on what to write? Try one of these prompts to sharpen your skills:</p>
-        <ul>
-            <li>Describe a memorable moment from your childhood using all five senses.</li>
-            <li>Write a letter to your future self in 5 years. What advice would you give?</li>
-            <li>Argue for or against the statement: "Homework should be banned."</li>
-            <li>Imagine you are a character from your favourite novel. Narrate a day in their life.</li>
-            <li>Explain the importance of reading books in the digital age.</li>
+        <ul style="list-style: '✅ ';">
+            <li>Describe a memorable childhood moment using all five senses.</li>
+            <li>Write a letter to your future self in 5 years.</li>
+            <li>Argue: "Should homework be banned?"</li>
+            <li>Narrate a day in the life of your favourite literary character.</li>
         </ul>
-        <p style="margin-top:1rem;">💡 <strong>Tip:</strong> Set a timer for 15 minutes and write without stopping. Then edit later!</p>
     </section>
 
-    <!-- Recommended Resources -->
-    <section id="resources" class="study-section" style="margin-top:0;">
+    <section id="streak" class="streak-box slide-right">
+        <span>🔥</span>
+        <div class="streak-day" id="streakContainer"></div>
+    </section>
+
+    <section id="resources" class="study-section slide-left">
         <h3>📚 Recommended Resources</h3>
         <div class="study-card-grid">
-            <div class="study-card"><span>🎧</span><strong>Podcasts</strong><br>"The English We Speak" (BBC)<br>"Grammar Girl"</div>
-            <div class="study-card"><span>📱</span><strong>Apps</strong><br>Grammarly, Duolingo, Quizlet</div>
-            <div class="study-card"><span>📖</span><strong>Free eBooks</strong><br>Project Gutenberg<br>ManyBooks</div>
-            <div class="study-card"><span>🎥</span><strong>YouTube Channels</strong><br>English with Lucy, Learn English with TV Series</div>
+            <div class="study-card"><span>🎧</span><strong>Podcasts</strong><br>"The English We Speak" (BBC)</div>
+            <div class="study-card"><span>📱</span><strong>Apps</strong><br>Grammarly, Duolingo</div>
+            <div class="study-card"><span>📖</span><strong>eBooks</strong><br>Project Gutenberg</div>
+            <div class="study-card"><span>🎥</span><strong>YouTube</strong><br>English with Lucy</div>
         </div>
     </section>
 
-    <!-- Secret Contact (Chat entrance) -->
+    <div class="quote-box fade-up" id="quoteBox"></div>
+
     <section id="contact">
-        <div class="cf-container">
-            <h2 class="cf-text-center">📞 Contact Us</h2>
-            <p class="cf-text-center" style="color: var(--text-secondary); margin-bottom: 2rem;">Have questions? We'd love to hear from you!</p>
-            <div class="contact-card">
-                <p style="font-size:1.1rem; margin-bottom:0.5rem;">📧 <a href="mailto:support@campusfify.com">support@campusfify.com</a></p>
-                <p style="font-size:1.1rem; margin-bottom:0.5rem;">📞 <a href="tel:+919999999999">+91 99999 99999</a></p>
-                <p style="font-size:1.1rem;">🏢 New Delhi, India</p>
-            </div>
+        <h2>📞 Contact Us</h2>
+        <div class="contact-card">
+            <p>📧 <a href="mailto:support@campusfify.com">support@campusfify.com</a></p>
+            <p>📞 <a href="tel:+919999999999">+91 99999 99999</a></p>
+            <p>🏢 New Delhi, India</p>
         </div>
     </section>
+
+    <footer class="cf-footer">
+        <p>📚 LitMaster · Your interactive English study companion for 11th grade and beyond.</p>
+    </footer>
 
     <canvas id="confettiCanvas"></canvas>
 
-    <footer class="cf-footer">
-        <div class="cf-container">
-            <div class="cf-footer-brand">📚 LitMaster ✨</div>
-            <p class="cf-footer-disclaimer">Your AI‑powered English study companion for 11th grade and beyond.</p>
-            <div class="cf-footer-buttons">
-                <a href="#contact" class="cf-btn cf-btn--contact cf-btn--small">📞 Contact Us</a>
-            </div>
-        </div>
-    </footer>
-
     <script>
         window.isLoggedIn = <%= user ? 'true' : 'false' %>;
-    </script>
 
-    <script>
-        // ===== RANDOM DAILY TIP =====
-        const studyTips = [
-            { "tip": "Always read the reading comprehension questions before diving into the passage. This simple trick helps you spot answers instantly while reading.", "category": "exam strategy" },
-            { "tip": "Character sketches are high-scoring goldmines. Practice mapping out main traits and key quotes for every central character in your syllabus.", "category": "exam strategy" },
-            { "tip": "Underline key headings and quotes in your answers with a pencil. Presenting clean, scannable answers earns instant bonus points with examiners.", "category": "exam strategy" },
-            { "tip": "Never leave a literature question completely blank. Writing relevant themes or context can still net you partial marks.", "category": "exam strategy" },
-            { "tip": "Spend the first 15 minutes of reading time strictly highlighting key words in the reading section and selecting your optional questions.", "category": "exam strategy" },
-            { "tip": "Double-check your question numbers in the margin before handing in your script. A misnumbered answer is a wasted answer.", "category": "exam strategy" },
-            { "tip": "Start long answers with a direct, strong thesis statement. Examiners favor clear, confident openings over lengthy filler.", "category": "exam strategy" },
-            { "tip": "Use 'few' for countable nouns and 'little' for uncountable ones—a tiny rule that frequently saves 2 easy marks in error correction.", "category": "grammar" },
-            { "tip": "Master subject-verb agreement: singular subjects take singular verbs, even when separated by long prepositional phrases.", "category": "grammar" },
-            { "tip": "In reported speech, remember to shift tenses back and change time expressions like 'tomorrow' to 'the following day'.", "category": "grammar" },
-            { "tip": "Watch out for active vs. passive voice transformations; ensuring the correct tense of the auxiliary verb 'to be' is key.", "category": "grammar" },
-            { "tip": "Avoid comma splices by joining independent clauses with a semicolon or a coordinating conjunction like 'and' or 'but'.", "category": "grammar" },
-            { "tip": "Prepositions of time trip up many students: use 'in' for years/months, 'on' for days/dates, and 'at' for specific times.", "category": "grammar" },
-            { "tip": "'Its' shows possession, while 'it's' is a contraction for 'it is'. Don't lose unnecessary marks over a simple apostrophe.", "category": "grammar" },
-            { "tip": "For article writing, always start with a catchy headline and a rhetorical question to immediately engage the examiner.", "category": "writing" },
-            { "tip": "Memorize the exact layout for formal letters, including sender's address, date, receiver's designation, and subject line.", "category": "writing" },
-            { "tip": "Keep notice writing strictly inside a neat four-sided box; forgetting the box loses you an easy formatting mark.", "category": "writing" },
-            { "tip": "Break long compositions into 3–4 logical paragraphs: an introduction, two body paragraphs for arguments, and a clear conclusion.", "category": "writing" },
-            { "tip": "In report writing, use passive voice and past tense to maintain an objective, formal tone.", "category": "writing" },
-            { "tip": "Start your speech writing with a warm, formal greeting to the audience and a strong hook to state your topic.", "category": "writing" },
-            { "tip": "In debate writing, clearly take a stance in your opening paragraph and address the opposition's views with strong counterarguments.", "category": "writing" },
-            { "tip": "The poem 'A Photograph' by Shirley Toulson frequently features questions on loss and memory—memorize the central themes and poetic devices.", "category": "literature" },
-            { "tip": "Always name the chapter, poem, author, or poet in your opening sentence when answering short literature questions.", "category": "literature" },
-            { "tip": "Create quick summary flashcards for every chapter containing key events, main themes, and central conflict points.", "category": "literature" },
-            { "tip": "Learn literary devices like oxymoron, personification, and metaphor across all prescribed poems to tackle extract-based questions effortlessly.", "category": "literature" },
-            { "tip": "Focus on the contrasting traits of main characters in drama or fiction—comparative questions are a favorite among board paper setters.", "category": "literature" },
-            { "tip": "Relate core literature themes to broader human values or modern contexts to give your long-answer responses a unique edge.", "category": "literature" },
-            { "tip": "Keep a dedicated notebook for poetic devices and line-by-line meanings for quick revision on exam eve.", "category": "literature" },
-            { "tip": "Spend exactly 5 minutes planning your essay before writing—a quick mind map prevents blank-page panic and messy structure.", "category": "time management" },
-            { "tip": "Allocate time based on marks: spend roughly 1.5 minutes per mark to ensure you finish the entire paper comfortably.", "category": "time management" },
-            { "tip": "Reserve the last 10 minutes strictly for proofreading grammar, spelling, and ensuring all sub-questions are numbered correctly.", "category": "time management" },
-            { "tip": "Attempt the writing section first if it takes you longer, but strictly adhere to your preset time limits for each task.", "category": "time management" },
-            { "tip": "If you get stuck on a difficult reading passage, skip to literature and come back once your mind is in a flow.", "category": "time management" },
-            { "tip": "Practice solving full sample papers with a real clock to build writing speed and endurance under exam conditions.", "category": "time management" },
-            { "tip": "Limit your practice responses to word counts; exceeding word limits wastes precious time and yields no extra marks.", "category": "time management" },
-            { "tip": "Notice writing is almost a guaranteed short-writing question; practice at least 2 formats a week for guaranteed marks.", "category": "high‑probability" },
-            { "tip": "Extract-based poetry questions carry high weightage; ensure you know who speaks every line and what tone they use.", "category": "high‑probability" },
-            { "tip": "Formal letters like 'Letter to the Editor' appear almost every year—master standard phrases like 'Through the columns of your esteemed newspaper...'", "category": "high‑probability" },
-            { "tip": "Theme-based 6-mark questions often combine lesson morals with personal reflection—be ready to write 120-150 thoughtful words.", "category": "high‑probability" },
-            { "tip": "Tense and editing/omission passages are recurring grammar staples; practice daily 5-minute drills to build error-spotting instincts.", "category": "high‑probability" }
-        ];
+        // ---------- DARK MODE ----------
+        const darkToggle = document.getElementById('darkModeToggle');
+        const prefersDark = localStorage.getItem('darkMode') === 'true';
+        if (prefersDark) document.body.classList.add('dark');
+        darkToggle.textContent = prefersDark ? '☀️' : '🌙';
+        darkToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            localStorage.setItem('darkMode', isDark);
+            darkToggle.textContent = isDark ? '☀️' : '🌙';
+        });
 
-        function showRandomTip() {
-            const randomIndex = Math.floor(Math.random() * studyTips.length);
-            const tip = studyTips[randomIndex];
-            document.getElementById('tipText').textContent = tip.tip;
-            document.getElementById('tipCategory').textContent = tip.category;
-        }
-        showRandomTip();
-
-        // ===== SECRET CHAT ENTRANCE =====
+        // ---------- SECRET CHAT ENTRANCE ----------
         document.querySelectorAll('.cf-contact-link, .cf-btn--contact').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.preventDefault();
@@ -501,7 +381,77 @@
             });
         });
 
-        // ===== CONFETTI ENGINE =====
+        // ---------- SCROLL REVEAL ANIMATIONS ----------
+        const scrollElements = document.querySelectorAll('.slide-left, .slide-right, .fade-up');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+        }, { threshold: 0.2 });
+        scrollElements.forEach(el => observer.observe(el));
+
+        // ---------- TYPING TIP ----------
+        const tips = [
+            { tip: "Always read comprehension questions before the passage.", category: "exam strategy" },
+            { tip: "Use 'few' for countable nouns, 'little' for uncountable ones.", category: "grammar" },
+            { tip: "Formal letters need sender's address, date, and subject line.", category: "writing" },
+            { tip: "The poem 'A Photograph' often appears with themes of loss and memory.", category: "literature" },
+            { tip: "Spend 5 minutes planning your essay – a quick mind map prevents panic.", category: "time management" },
+            { tip: "Notice writing is a guaranteed 4‑mark question; practice 2 formats a week.", category: "high‑probability" }
+        ];
+        let tipIndex = Math.floor(Math.random() * tips.length);
+        let charIndex = 0;
+        const tipTextEl = document.getElementById('typingTip');
+        const tipCatEl = document.getElementById('tipCategory');
+
+        function typeTip() {
+            const currentTip = tips[tipIndex];
+            tipCatEl.textContent = currentTip.category;
+            charIndex = 0;
+            tipTextEl.textContent = '';
+            const interval = setInterval(() => {
+                if (charIndex < currentTip.tip.length) {
+                    tipTextEl.textContent += currentTip.tip[charIndex];
+                    charIndex++;
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        tipIndex = (tipIndex + 1) % tips.length;
+                        typeTip();
+                    }, 4000);
+                }
+            }, 40);
+        }
+        typeTip();
+
+        // ---------- VOCABULARY ----------
+        const vocabWords = [
+            { word: "Ephemeral", def: "Lasting for a very short time." },
+            { word: "Ubiquitous", def: "Present, appearing, or found everywhere." },
+            { word: "Pragmatic", def: "Dealing with things sensibly and realistically." },
+        ];
+        const vocab = vocabWords[Math.floor(Math.random() * vocabWords.length)];
+        document.getElementById('vocabWord').textContent = vocab.word;
+        document.getElementById('vocabDef').textContent = vocab.def;
+
+        // ---------- STREAK CALENDAR ----------
+        const streakContainer = document.getElementById('streakContainer');
+        const days = ['M','T','W','T','F','S','S'];
+        const streakStatus = [true, true, false, true, true, true, false];
+        let streakHTML = '';
+        days.forEach((d, i) => {
+            streakHTML += `<div class="streak-day"><span>${streakStatus[i] ? '✅' : '⬜'}</span><small>${d}</small></div>`;
+        });
+        streakContainer.innerHTML = streakHTML;
+
+        // ---------- INSPIRATIONAL QUOTE ----------
+        const quotes = [
+            { text: "The beautiful thing about learning is nobody can take it away from you.", author: "B.B. King" },
+            { text: "Education is the passport to the future, for tomorrow belongs to those who prepare for it today.", author: "Malcolm X" },
+            { text: "The expert in anything was once a beginner.", author: "Helen Hayes" }
+        ];
+        const quote = quotes[Math.floor(Math.random() * quotes.length)];
+        document.getElementById('quoteBox').innerHTML = `<p>“${quote.text}”</p><small>— ${quote.author}</small>`;
+
+        // ---------- CONFETTI ENGINE ----------
         const confettiCanvas = document.getElementById('confettiCanvas');
         const ctx = confettiCanvas.getContext('2d');
         let confettiPieces = [], confettiRunning = false, confettiRAF = null;
@@ -568,7 +518,7 @@
             else { confettiCanvas.classList.remove('active'); ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); }
         }
 
-        // ===== QUIZ ENGINE (unchanged) =====
+        // ===== QUIZ ENGINE (unchanged, full version) =====
         let questions = [], currentIndex = 0, score = 0, xp = 0, streak = 0, highestStreak = 0;
         let answered = false, totalAttempted = 0, total = 0;
         const quizInner = document.getElementById('quizInner');
@@ -607,7 +557,7 @@
                 `;
                 document.getElementById('restartQuiz').addEventListener('click', startNewQuiz);
                 document.getElementById('shareScore').addEventListener('click', () => {
-                    navigator.clipboard.writeText(shareText).then(() => alert('Score copied! Share it with friends 😊'));
+                    navigator.clipboard.writeText(shareText).then(() => alert('Score copied!'));
                 });
                 return;
             }
@@ -744,10 +694,9 @@
         }
         startNewQuiz();
 
-        // ===== NAVIGATION + ACTIVE LINK HIGHLIGHT =====
+        // ---------- NAVIGATION + ACTIVE LINK ----------
         const sections = document.querySelectorAll('section[id]');
         const navLinks = document.querySelectorAll('.cf-nav a[data-section]');
-
         function changeActiveLink() {
             let index = sections.length;
             while (--index && window.scrollY + 120 < sections[index].offsetTop) {}
@@ -756,7 +705,6 @@
         }
         changeActiveLink();
         window.addEventListener('scroll', changeActiveLink, { passive: true });
-
         navLinks.forEach(link => {
             link.addEventListener('click', e => {
                 e.preventDefault();
@@ -766,23 +714,11 @@
             });
         });
 
-        // Mobile menu toggle
+        // Mobile menu
         const hamburger = document.getElementById('hamburgerBtn');
-        const navWrapper = document.getElementById('navWrapper');
+        const navMenu = document.getElementById('navMenu');
         hamburger.addEventListener('click', () => {
-            const expanded = hamburger.getAttribute('aria-expanded') === 'true';
-            hamburger.setAttribute('aria-expanded', !expanded);
-            navWrapper.classList.toggle('open');
-            hamburger.classList.toggle('active');
-        });
-        document.querySelectorAll('.cf-nav a').forEach(link => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth <= 768) {
-                    hamburger.setAttribute('aria-expanded', 'false');
-                    navWrapper.classList.remove('open');
-                    hamburger.classList.remove('active');
-                }
-            });
+            navMenu.classList.toggle('open');
         });
     </script>
 </body>
