@@ -31,10 +31,7 @@
             --radius-btn: 12px;
             --transition: 0.2s ease-in-out;
             --font: 'Inter', system-ui, -apple-system, sans-serif;
-            
-            /* Quiz specific */
             --option-bg: #f1f5f9;
-            --option-border: transparent;
             --feedback-bg: #f1f5f9;
         }
 
@@ -51,7 +48,6 @@
             --shadow: 0 4px 20px rgba(0,0,0,0.3);
             --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
             --option-bg: #334155;
-            --option-border: transparent;
             --feedback-bg: #334155;
         }
 
@@ -65,6 +61,25 @@
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
             transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+
+        /* Live background animation */
+        .live-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none;
+        }
+        .live-bg span {
+            position: absolute; display: block; border-radius: 50%;
+            opacity: 0.12; animation: float 30s infinite ease-in-out;
+        }
+        .live-bg span:nth-child(1) { left: 15%; top: 25%; width: 120px; height: 120px; background: var(--primary); animation-delay: 0s; }
+        .live-bg span:nth-child(2) { left: 70%; top: 60%; width: 150px; height: 150px; background: var(--accent); animation-delay: -8s; }
+        .live-bg span:nth-child(3) { left: 40%; top: 80%; width: 90px; height: 90px; background: var(--green); animation-delay: -16s; }
+        .live-bg span:nth-child(4) { left: 80%; top: 15%; width: 100px; height: 100px; background: var(--primary); animation-delay: -24s; }
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg) scale(1); }
+            50% { transform: translateY(-50px) rotate(180deg) scale(1.1); }
+            100% { transform: translateY(0) rotate(360deg) scale(1); }
         }
 
         .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
@@ -98,15 +113,16 @@
             transition: background 0.3s;
         }
         body.dark .header { background: rgba(15,23,42,0.85); border-color: rgba(255,255,255,0.05); }
-        .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
         .logo {
             font-weight: 800; font-size: 1.6rem; color: var(--primary);
             text-decoration: none; letter-spacing: -0.5px;
         }
-        .nav { display: flex; align-items: center; gap: 1.8rem; font-weight: 500; }
+        .nav { display: flex; align-items: center; gap: 1.5rem; font-weight: 500; flex-wrap: wrap; }
         .nav a {
             color: var(--text-light); text-decoration: none; padding: 0.3rem 0;
             border-bottom: 2px solid transparent; transition: all var(--transition);
+            white-space: nowrap;
         }
         .nav a:hover, .nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
         .nav .contact-link {
@@ -114,10 +130,7 @@
             padding: 0.5rem 1.5rem; border-radius: 40px; border-bottom: none;
         }
         .nav .contact-link:hover { background: #059669; }
-        .dark-toggle { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text); }
-
-        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
-        .hamburger span { width: 24px; height: 3px; background: var(--text); border-radius: 2px; transition: 0.2s; }
+        .dark-toggle { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text); margin-left: auto; }
 
         /* Hero */
         .hero { padding: 4rem 0 3rem; text-align: center; }
@@ -201,48 +214,77 @@
         .streak-fire { font-size: 1.2rem; color: var(--accent); margin-left: 0.3rem; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-        /* Mini cards (vocab, streak, quote) */
-        .mini-card {
-            background: var(--card-bg); border-radius: var(--radius); padding: 1.5rem;
-            box-shadow: var(--shadow); margin: 1.5rem auto; max-width: 700px;
-            display: flex; align-items: center; gap: 1rem;
+        /* New engaging sections */
+        .fact-card {
+            background: linear-gradient(135deg, #ede9fe, #e0e7ff);
+            border-radius: var(--radius); padding: 1.8rem;
+            color: var(--text); box-shadow: var(--shadow);
+            display: flex; align-items: center; gap: 1.5rem;
+            max-width: 800px; margin: 0 auto 2rem auto;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
-        .mini-card .word { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
-        .mini-card .def { color: var(--text-light); }
-        .streak-box { justify-content: center; flex-wrap: wrap; }
-        .streak-day { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
-        .streak-day span { font-size: 1.4rem; }
-        .streak-day small { font-size: 0.8rem; color: var(--text-light); }
-        .quote-box { display: block; text-align: center; font-style: italic; color: var(--text-light); padding: 1.5rem; }
-        .quote-box p { font-size: 1.2rem; }
-        .quote-box small { display: block; margin-top: 0.5rem; }
+        body.dark .fact-card { background: linear-gradient(135deg, #2d2b55, #1e2a4a); }
+        .fact-card .fact-icon { font-size: 2.8rem; }
+        .fact-card .fact-text { font-size: 1.2rem; font-weight: 600; font-style: italic; }
+        .fact-card .fact-source { font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-light); }
 
-        /* Grid */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
-        .grid-item {
-            background: var(--card-bg); border-radius: var(--radius); padding: 1.5rem;
-            text-align: center; font-weight: 600; box-shadow: var(--shadow);
-            transition: transform 0.3s, box-shadow 0.3s; color: var(--text);
+        .word-jumble {
+            max-width: 500px; margin: 2rem auto;
+            text-align: center; background: var(--card-bg); border-radius: var(--radius);
+            padding: 2rem; box-shadow: var(--shadow);
         }
-        .grid-item:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
-        .grid-item span { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+        .word-jumble h3 { margin-bottom: 1rem; }
+        .scrambled-word { font-size: 2.5rem; letter-spacing: 0.3rem; font-weight: 700; margin-bottom: 1rem; }
+        .jumble-input {
+            padding: 0.75rem 1.2rem; border-radius: var(--radius-btn); border: 2px solid #cbd5e1;
+            font-size: 1rem; font-family: var(--font); width: 100%; margin-bottom: 1rem;
+            background: var(--card-bg); color: var(--text);
+            transition: border-color var(--transition);
+        }
+        .jumble-input:focus { outline: none; border-color: var(--primary); }
+        .jumble-feedback { font-weight: 600; margin-top: 0.5rem; }
 
-        /* Contact */
-        #contact { text-align: center; padding: 3rem 0; }
-        .contact-card { background: var(--card-bg); border-radius: var(--radius); padding: 2rem; max-width: 500px; margin: 0 auto; box-shadow: var(--shadow); }
-        .contact-card a { color: var(--primary); font-weight: 600; text-decoration: none; }
+        /* Shimmer loading */
+        .shimmer {
+            background: linear-gradient(90deg, var(--card-bg) 25%, rgba(255,255,255,0.1) 50%, var(--card-bg) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: var(--radius-sm);
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        footer { text-align: center; padding: 2rem; color: var(--text-light); background: var(--card-bg); margin-top: 2rem; }
+        /* Footer */
+        footer {
+            text-align: center; padding: 2rem; color: var(--text-light);
+            background: var(--card-bg); margin-top: 2rem;
+            position: relative;
+        }
+        .footer-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 6px; margin-top: 1rem;
+            position: relative;
+        }
+        /* Circular animation to attract click */
+        .footer-btn::after {
+            content: '';
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 50px;
+            border: 3px solid var(--green);
+            animation: pulse-ring 2s infinite;
+            opacity: 0;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
 
         /* Scroll animations */
         .fade-up { opacity: 0; transform: translateY(30px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
         .fade-up.visible { opacity: 1; transform: translateY(0); }
 
         @media (max-width: 768px) {
-            .nav { display: none; flex-direction: column; position: absolute; top: 70px; right: 20px;
-                   background: var(--card-bg); padding: 1rem; border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); }
-            .nav.open { display: flex; }
-            .hamburger { display: flex; }
+            .nav { gap: 0.8rem; font-size: 0.9rem; }
             .hero h1 { font-size: 2rem; }
         }
 
@@ -251,15 +293,18 @@
     </style>
 </head>
 <body>
+    <!-- Live background animation -->
+    <div class="live-bg">
+        <span></span><span></span><span></span><span></span>
+    </div>
+
     <div class="header">
         <div class="container header-inner">
             <a href="/" class="logo">📚 LitMaster</a>
-            <button class="hamburger" id="hamburgerBtn"><span></span><span></span><span></span></button>
             <nav class="nav" id="navMenu">
                 <a href="#quiz" data-section="quiz">Quiz</a>
-                <a href="#grammar" data-section="grammar">Grammar</a>
-                <a href="#writing" data-section="writing">Writing</a>
-                <a href="#resources" data-section="resources">Resources</a>
+                <a href="#funfact" data-section="funfact">Fun Fact</a>
+                <a href="#wordjumble" data-section="wordjumble">Word Jumble</a>
                 <a href="#contact" class="contact-link">📞 Contact Us</a>
             </nav>
             <button class="dark-toggle" id="darkToggle">🌙</button>
@@ -270,7 +315,7 @@
         <!-- Hero -->
         <section class="hero">
             <h1>Master English, One Step at a Time</h1>
-            <p>Interactive quizzes, helpful study tools, and daily tips — built for 11th‑grade success.</p>
+            <p>Interactive quizzes, engaging word games, and fascinating facts — crafted for 11th‑grade success.</p>
         </section>
 
         <!-- Typing Tip -->
@@ -284,74 +329,63 @@
             </div>
         </section>
 
-        <!-- Vocabulary Builder -->
-        <section class="mini-card fade-up" id="vocabBox">
-            <span style="font-size:2rem;">📖</span>
-            <div>
-                <div class="word" id="vocabWord">Ephemeral</div>
-                <div class="def" id="vocabDef">Lasting for a very short time.</div>
-            </div>
-        </section>
-
         <!-- Quiz -->
         <section class="section fade-up" id="quiz">
             <h2 style="text-align:center; margin-bottom:1rem;">🧠 Quick Knowledge Check</h2>
             <p style="text-align:center; color:var(--text-light); margin-bottom:2rem;">10 random questions each round – earn XP and streaks!</p>
             <div class="card quiz-card" id="quizContainer">
-                <div id="quizInner"></div>
+                <div id="quizInner">
+                    <!-- Shimmer loading placeholder -->
+                    <div style="display:flex; flex-direction:column; gap:1rem;">
+                        <div class="shimmer" style="height:2rem; width:60%;"></div>
+                        <div class="shimmer" style="height:1.5rem; width:80%;"></div>
+                        <div class="shimmer" style="height:3rem; width:100%;"></div>
+                        <div class="shimmer" style="height:3rem; width:100%;"></div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Grammar Tips -->
-        <section class="section fade-up" id="grammar">
-            <h3 style="text-align:center; margin-bottom:1.5rem;">📖 Grammar Quick Tips</h3>
-            <div class="grid">
-                <div class="grid-item"><span>🔤</span><strong>Subject-Verb Agreement</strong><br>Singular subjects need singular verbs.</div>
-                <div class="grid-item"><span>🕰️</span><strong>Tenses</strong><br>Present perfect: "I have finished my homework."</div>
-                <div class="grid-item"><span>📌</span><strong>Articles</strong><br>"The" for specific, "a/an" for general.</div>
-                <div class="grid-item"><span>🧩</span><strong>Prepositions</strong><br>Common pairs: "interested in", "good at".</div>
+        <!-- Fun Fact Section -->
+        <section class="section fade-up" id="funfact">
+            <h2 style="text-align:center; margin-bottom:1.5rem;">📜 Literary Fun Fact</h2>
+            <div class="fact-card" id="funFactCard">
+                <div class="fact-icon" id="factIcon">📚</div>
+                <div>
+                    <p class="fact-text" id="factText">Loading...</p>
+                    <p class="fact-source" id="factSource"></p>
+                </div>
             </div>
         </section>
 
-        <!-- Writing Prompts -->
-        <section class="section fade-up" id="writing">
-            <h3 style="text-align:center; margin-bottom:1rem;">📝 Writing Prompts</h3>
-            <div class="card" style="text-align:left;">
-                <ul style="list-style: '✅ '; padding-left: 1.5rem; color: var(--text-light);">
-                    <li>Describe a memorable childhood moment using all five senses.</li>
-                    <li>Write a letter to your future self in 5 years.</li>
-                    <li>Argue: "Should homework be banned?"</li>
-                    <li>Narrate a day in the life of your favourite literary character.</li>
-                </ul>
-            </div>
-        </section>
-
-        <!-- Streak Calendar -->
-        <section class="mini-card streak-box fade-up" id="streakBox">
-            <span>🔥</span>
-            <div class="streak-day" id="streakContainer"></div>
-        </section>
-
-        <!-- Recommended Resources -->
-        <section class="section fade-up" id="resources">
-            <h3 style="text-align:center; margin-bottom:1.5rem;">📚 Recommended Resources</h3>
-            <div class="grid">
-                <div class="grid-item"><span>🎧</span><strong>Podcasts</strong><br>"The English We Speak" (BBC)</div>
-                <div class="grid-item"><span>📱</span><strong>Apps</strong><br>Grammarly, Duolingo</div>
-                <div class="grid-item"><span>📖</span><strong>eBooks</strong><br>Project Gutenberg</div>
-                <div class="grid-item"><span>🎥</span><strong>YouTube</strong><br>English with Lucy</div>
+        <!-- Word Jumble Section -->
+        <section class="section fade-up" id="wordjumble">
+            <h2 style="text-align:center; margin-bottom:1.5rem;">🎲 Word Jumble</h2>
+            <div class="word-jumble card">
+                <h3>Unscramble the word</h3>
+                <div class="scrambled-word" id="scrambledWord">-----</div>
+                <p style="color:var(--text-light); margin-bottom:1rem;">Type the correct word:</p>
+                <input type="text" class="jumble-input" id="jumbleInput" placeholder="Your answer...">
+                <div style="display:flex; gap:1rem; justify-content:center;">
+                    <button class="btn" id="checkJumble">Check</button>
+                    <button class="btn btn--outline" id="newJumble">New Word</button>
+                </div>
+                <p class="jumble-feedback" id="jumbleFeedback"></p>
             </div>
         </section>
 
         <!-- Inspirational Quote -->
-        <div class="quote-box fade-up" id="quoteBox" style="margin-top:2rem;"></div>
+        <div class="quote-box fade-up" style="text-align:center; font-style:italic; color:var(--text-light); padding:2rem;">
+            <p style="font-size:1.2rem;" id="quoteText"></p>
+            <small style="display:block; margin-top:0.5rem;" id="quoteAuthor"></small>
+        </div>
 
         <!-- Contact (secret chat entrance) -->
-        <section id="contact" class="fade-up">
+        <section id="contact" class="fade-up" style="text-align:center; padding:3rem 0;">
             <h2>📞 Contact Us</h2>
-            <div class="contact-card">
-                <p>📧 <a href="mailto:support@campusfify.com">support@campusfify.com</a></p>
-                <p>📞 <a href="tel:+919999999999">+91 99999 99999</a></p>
+            <div class="card" style="max-width:500px; margin:0 auto;">
+                <p>📧 <a href="mailto:support@campusfify.com" style="color:var(--primary);">support@campusfify.com</a></p>
+                <p>📞 <a href="tel:+919999999999" style="color:var(--primary);">+91 99999 99999</a></p>
                 <p>🏢 New Delhi, India</p>
             </div>
         </section>
@@ -359,6 +393,7 @@
 
     <footer>
         <p>📚 LitMaster · Your interactive English study companion for 11th grade.</p>
+        <a href="#contact" class="btn btn--contact footer-btn">📞 Contact Us</a>
     </footer>
 
     <canvas id="confettiCanvas"></canvas>
@@ -379,7 +414,7 @@
         });
 
         // ---------- SECRET CHAT ENTRANCE ----------
-        document.querySelectorAll('.contact-link, .btn--contact').forEach(btn => {
+        document.querySelectorAll('.contact-link, .btn--contact, .footer-btn').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.preventDefault();
                 window.isLoggedIn ? window.location.href = '/chat' : window.location.href = '/login';
@@ -429,40 +464,103 @@
         }
         typeTip();
 
-        // ---------- VOCABULARY ----------
-        const vocabWords = [
-            { word: "Ephemeral", def: "Lasting for a very short time." },
-            { word: "Ubiquitous", def: "Present, appearing, or found everywhere." },
-            { word: "Pragmatic", def: "Dealing with things sensibly and realistically." },
+        // ---------- FUN FACT (rotates on click / every 10 sec) ----------
+        const facts = [
+            { fact: "The oldest known written language is Sumerian, dating back to 3500 BC.", icon: "🏛️", source: "History of Writing" },
+            { fact: "William Shakespeare invented over 1,700 words, including 'bedroom' and 'lonely'.", icon: "🎭", source: "Shakespeare Lexicon" },
+            { fact: "The longest word in English has 189,819 letters and takes over three hours to pronounce.", icon: "📖", source: "Guinness World Records" },
+            { fact: "English is the official language of 67 countries and 27 non‑sovereign entities.", icon: "🌍", source: "Ethnologue" },
+            { fact: "The first English dictionary was written in 1755 by Samuel Johnson.", icon: "📚", source: "Johnson's Dictionary" },
+            { fact: "The dot over the letter 'i' is called a 'tittle'.", icon: "🔤", source: "Typography Trivia" },
         ];
-        const vocab = vocabWords[Math.floor(Math.random() * vocabWords.length)];
-        document.getElementById('vocabWord').textContent = vocab.word;
-        document.getElementById('vocabDef').textContent = vocab.def;
+        let currentFactIdx = Math.floor(Math.random() * facts.length);
+        const factCard = document.getElementById('funFactCard');
+        const factIcon = document.getElementById('factIcon');
+        const factText = document.getElementById('factText');
+        const factSource = document.getElementById('factSource');
 
-        // ---------- STREAK CALENDAR ----------
-        const streakContainer = document.getElementById('streakContainer');
-        const days = ['M','T','W','T','F','S','S'];
-        const streakStatus = [true, true, false, true, true, true, false];
-        let html = '';
-        days.forEach((d, i) => {
-            html += `<div class="streak-day"><span>${streakStatus[i] ? '✅' : '⬜'}</span><small>${d}</small></div>`;
+        function showFact() {
+            const fact = facts[currentFactIdx];
+            factIcon.textContent = fact.icon;
+            factText.textContent = fact.fact;
+            factSource.textContent = `— ${fact.source}`;
+            // Add subtle animation
+            factCard.style.transform = 'scale(0.98)';
+            setTimeout(() => { factCard.style.transform = ''; }, 150);
+        }
+        showFact();
+        factCard.addEventListener('click', () => {
+            currentFactIdx = (currentFactIdx + 1) % facts.length;
+            showFact();
         });
-        streakContainer.innerHTML = html;
+        setInterval(() => {
+            currentFactIdx = (currentFactIdx + 1) % facts.length;
+            showFact();
+        }, 10000);
 
-        // ---------- INSPIRATIONAL QUOTE ----------
+        // ---------- WORD JUMBLE ----------
+        const jumbleWords = [
+            { word: "LITERATURE", hint: "The body of written works." },
+            { word: "GRAMMAR", hint: "Rules of a language." },
+            { word: "VOCABULARY", hint: "Collection of words." },
+            { word: "SYNTAX", hint: "Sentence structure." },
+            { word: "METAPHOR", hint: "Figure of speech." },
+            { word: "ALLITERATION", hint: "Repetition of initial sounds." },
+        ];
+        let currentWordObj = jumbleWords[Math.floor(Math.random() * jumbleWords.length)];
+        const scrambledEl = document.getElementById('scrambledWord');
+        const jumbleInput = document.getElementById('jumbleInput');
+        const jumbleFeedback = document.getElementById('jumbleFeedback');
+        const checkBtn = document.getElementById('checkJumble');
+        const newBtn = document.getElementById('newJumble');
+
+        function scrambleWord(word) {
+            const arr = word.split('');
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            // Ensure it's not identical to original
+            if (arr.join('') === word) return scrambleWord(word);
+            return arr.join('');
+        }
+
+        function loadJumble() {
+            currentWordObj = jumbleWords[Math.floor(Math.random() * jumbleWords.length)];
+            scrambledEl.textContent = scrambleWord(currentWordObj.word);
+            jumbleInput.value = '';
+            jumbleFeedback.textContent = '';
+        }
+        loadJumble();
+
+        checkBtn.addEventListener('click', () => {
+            const answer = jumbleInput.value.trim().toUpperCase();
+            if (answer === currentWordObj.word) {
+                jumbleFeedback.innerHTML = '✅ Correct! Great job!';
+                jumbleFeedback.style.color = 'var(--green)';
+                // Load new word after a short delay
+                setTimeout(loadJumble, 2000);
+            } else {
+                jumbleFeedback.innerHTML = `❌ Try again! Hint: ${currentWordObj.hint}`;
+                jumbleFeedback.style.color = 'var(--red)';
+            }
+        });
+        newBtn.addEventListener('click', loadJumble);
+
+        // ---------- QUOTE ----------
         const quotes = [
             { text: "The beautiful thing about learning is nobody can take it away from you.", author: "B.B. King" },
             { text: "Education is the passport to the future.", author: "Malcolm X" },
             { text: "The expert in anything was once a beginner.", author: "Helen Hayes" }
         ];
         const quote = quotes[Math.floor(Math.random() * quotes.length)];
-        document.getElementById('quoteBox').innerHTML = `<p>“${quote.text}”</p><small>— ${quote.author}</small>`;
+        document.getElementById('quoteText').textContent = `“${quote.text}”`;
+        document.getElementById('quoteAuthor').textContent = `— ${quote.author}`;
 
         // ---------- CONFETTI ----------
         const canvas = document.getElementById('confettiCanvas');
         const ctx = canvas.getContext('2d');
         let confettiPieces = [], running = false, raf = null;
-
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         window.addEventListener('resize', resize);
         resize();
@@ -491,7 +589,6 @@
                 ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h); ctx.restore();
             }
         }
-
         function launchConfetti(count = 200) {
             confettiPieces = Array.from({length: count}, () => new Confetti());
             running = true; canvas.classList.add('active');
@@ -515,7 +612,7 @@
             else { canvas.classList.remove('active'); ctx.clearRect(0,0,canvas.width,canvas.height); }
         }
 
-        // ===== QUIZ ENGINE (adapted to new CSS) =====
+        // ===== QUIZ ENGINE (unchanged) =====
         let questions = [], currentIndex = 0, score = 0, xp = 0, streak = 0, highestStreak = 0;
         let answered = false, totalAttempted = 0, total = 0;
         const quizInner = document.getElementById('quizInner');
@@ -654,6 +751,13 @@
         }
 
         async function startNewQuiz() {
+            // Show shimmer while loading
+            quizInner.innerHTML = `<div style="display:flex; flex-direction:column; gap:1rem;">
+                <div class="shimmer" style="height:2rem; width:60%;"></div>
+                <div class="shimmer" style="height:1.5rem; width:80%;"></div>
+                <div class="shimmer" style="height:3rem; width:100%;"></div>
+                <div class="shimmer" style="height:3rem; width:100%;"></div>
+            </div>`;
             const fetched = await fetchRandomQuestions(10);
             if (!fetched.length) {
                 quizInner.innerHTML = '<div class="quiz-result"><h3>❌ No questions yet</h3><p>Try again later!</p></div>';
@@ -683,9 +787,6 @@
                 if (target) target.scrollIntoView({ behavior: 'smooth' });
             });
         });
-
-        // Mobile menu
-        document.getElementById('hamburgerBtn').addEventListener('click', () => document.getElementById('navMenu').classList.toggle('open'));
     </script>
 </body>
 </html>
