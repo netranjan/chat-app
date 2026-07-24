@@ -184,7 +184,7 @@ function showPopover(messageEl) {
 
   const rect = messageEl.getBoundingClientRect();
 
-  // Temporarily show popover to measure dimensions
+  // Temporarily show to measure dimensions
   popover.style.visibility = 'hidden';
   popover.classList.remove('hidden');
   popover.classList.add('flex');
@@ -194,14 +194,26 @@ function showPopover(messageEl) {
   popover.classList.remove('flex');
   popover.style.visibility = '';
 
+  // Try placing above the message
   let top = rect.top - popHeight - 8;
   if (top < 8) {
+    // Not enough room above → try below
     top = rect.bottom + 8;
   }
 
+  // ✅ NEW: ensure the popover doesn’t go below the viewport
+  const maxTop = window.innerHeight - popHeight - 8;
+  if (top > maxTop) {
+    // If below also doesn’t fit, force it to stay inside (even if it clips a little)
+    top = Math.max(8, rect.top - popHeight - 8);
+  }
+
+  // Horizontal centering with edge checks
   let left = rect.left + (rect.width - popWidth) / 2;
   if (left < 8) left = 8;
-  if (left + popWidth > window.innerWidth - 8) left = window.innerWidth - popWidth - 8;
+  if (left + popWidth > window.innerWidth - 8) {
+    left = window.innerWidth - popWidth - 8;
+  }
 
   popover.style.top = top + 'px';
   popover.style.left = left + 'px';
@@ -220,6 +232,9 @@ function setupContainerListener() {
   const container = document.getElementById('messagesContainer');
   if (!container || container.dataset.listenerSet) return;
   container.dataset.listenerSet = 'true';
+
+  // ✅ Prevent ghost clicks after touch
+  let touchJustHappened = false;
 
   // Shared interaction handler
   function handleInteraction(target) {
@@ -269,14 +284,17 @@ function setupContainerListener() {
     hidePopover();
   }
 
-  // Desktop click
+  // Desktop click – ignore if a touch just happened
   container.addEventListener('click', (e) => {
+    if (touchJustHappened) return;
     handleInteraction(e.target);
   });
 
-  // Mobile touch (fires before click, no ghost click)
+  // Mobile touch (fires before click)
   container.addEventListener('touchend', (e) => {
     e.preventDefault(); // prevent subsequent click
+    touchJustHappened = true;
+    setTimeout(() => { touchJustHappened = false; }, 300);
     handleInteraction(e.target);
   });
 
