@@ -176,8 +176,10 @@ function bindMessageEvents(el, id) {
     }, { once: true });
   }
 
+  // Parent click handler – toggle actions only if NOT a button/textarea
   el.addEventListener('click', (e) => {
-    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA') return;
+    // If the click target (or its parent) is a button or textarea, do nothing
+    if (e.target.closest('button') || e.target.closest('textarea')) return;
     const actions = el.querySelector('.message-actions');
     if (actions) {
       actions.classList.toggle('max-h-[60px]');
@@ -208,7 +210,7 @@ function bindMessageEvents(el, id) {
     toggleLike(id);
   });
 
-  // Reply button – fixed: calls setReply()
+  // Reply button – now works without closing actions
   el.querySelector('.reply-btn')?.addEventListener('click', e => {
     e.stopPropagation();
     setReply(id);
@@ -223,7 +225,7 @@ function bindMessageEvents(el, id) {
     deleteMessage(id);
   });
 
-  // Read receipts (manu observing rasuv's messages)
+  // Read receipts (manu observes rasuv's messages)
   if (currentUser.id === 2) {
     const msg = messagesMap.get(id);
     if (msg && msg.senderId === 1 && !(msg.readBy || []).includes(2)) {
