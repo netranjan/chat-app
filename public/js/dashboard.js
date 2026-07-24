@@ -47,17 +47,7 @@ async function fetchDashboard() {
         const since = u.typingUpdatedAt ? new Date(u.typingUpdatedAt).toLocaleTimeString() : 'unknown';
         html += `<p class="text-pink-600 font-medium">Typing since: ${since}</p>`;
       }
-      if (u.username === 'manu' && u.currentLocation) {
-        const loc = u.currentLocation;
-        html += `<div class="bg-gray-50 rounded-xl p-3 mt-2 text-sm text-gray-700">
-                  <p class="font-semibold">📍 Location</p>
-                  <p>${loc.city || ''}, ${loc.state || ''}, ${loc.country || ''}</p>
-                  <p>🌐 ISP: ${loc.isp || '—'}, IP: ${loc.ip || '—'}</p>
-                  <p class="text-xs text-gray-400">Last updated: ${loc.updatedAt ? new Date(loc.updatedAt).toLocaleString() : '—'}</p>
-                </div>`;
-      } else if (u.username === 'manu' && !u.currentLocation) {
-        html += `<p class="text-sm text-gray-400 italic mt-1">Waiting for location data…</p>`;
-      }
+
     });
     dashboardData.innerHTML = html || '<p class="text-gray-500">No users found.</p>';
   } catch(e) {
