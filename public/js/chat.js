@@ -16,6 +16,10 @@ let unreadCount = 0;
 let sentinel = null;
 let sentinelObserver = null;
 
+// Popover state
+let activeMessageId = null;
+const popover = document.getElementById('actionPopover');
+
 // ---------- Notification permission (only for Rasuv) ----------
 if (currentUser.id === 1) {
   document.body.addEventListener('click', function requestNotifPerm() {
@@ -52,7 +56,7 @@ function getDateLabel(isoString) {
   return date.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
-// ---------- Build HTML (toggle menu, heart hidden when 0 likes) ----------
+// ---------- Build HTML ----------
 function buildMessageHTML(msg) {
   const isMine = msg.senderId === currentUser.id;
   const senderName = msg.senderId === 1 ? 'rasuv' : 'manu';
@@ -97,7 +101,7 @@ function buildMessageHTML(msg) {
     ? (msg.readBy && msg.readBy.length > 0 ? '✓✓' : '✓')
     : '';
 
-  // Heart only visible when likes > 0
+  // Heart only when likes > 0
   const likeSection = likeCount > 0
     ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/5 like-section">
          <button class="like-btn text-pink-500 border-0 bg-transparent cursor-pointer text-lg p-1">❤️</button>
@@ -116,13 +120,6 @@ function buildMessageHTML(msg) {
           ${readReceipt ? `<span class="text-[11px] text-gray-600 ml-1 read-receipt">${readReceipt}</span>` : ''}
           ${likeSection}
         </div>
-      </div>
-      <!-- Hidden by default, toggled on tap -->
-      <div class="flex gap-1 mt-1.5 flex-wrap max-h-0 overflow-hidden opacity-0 transition-all duration-300 pointer-events-none message-actions">
-        <button class="like-btn-action px-3 py-1 rounded-full text-sm bg-black/5 text-gray-500 hover:bg-black/10 hover:text-gray-900 transition">❤️</button>
-        <button class="reply-btn px-3 py-1 rounded-full text-sm bg-black/5 text-gray-500 hover:bg-black/10 hover:text-gray-900 transition">↩ Reply</button>
-        <button class="edit-btn px-3 py-1 rounded-full text-sm bg-black/5 text-gray-500 hover:bg-black/10 hover:text-gray-900 transition">✏️ Edit</button>
-        <button class="delete-btn px-3 py-1 rounded-full text-sm bg-black/5 text-gray-500 hover:bg-red-100 hover:text-red-500 transition">🗑 Delete</button>
       </div>
     </div>`;
 }
@@ -158,25 +155,148 @@ function updateMessageElement(el, msg) {
     }
   }
 
-  // Show/hide heart based on likes
   const likeSection = el.querySelector('.like-section');
   const likeCountSpan = el.querySelector('.like-count');
   const newCount = msg.likes ? msg.likes.length : 0;
   if (newCount > 0) {
-    if (!likeSection) {
-      // If heart is missing entirely (unlikely, but possible on first load if 0 likes)
-      // we rebuild the element. In practice, we never rebuild, so skip.
-    } else {
-      likeSection.classList.remove('hidden');
+    if (likeSection) {
+      likeSection.style.display = '';
       if (likeCountSpan) likeCountSpan.textContent = newCount;
+    } else {
+      const footer = el.querySelector('.flex.items-center.justify-end');
+      if (footer) {
+        const span = document.createElement('span');
+        span.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/5 like-section';
+        span.innerHTML = `<button class="like-btn text-pink-500 border-0 bg-transparent cursor-pointer text-lg p-1">❤️</button>
+                          <span class="text-sm font-semibold text-gray-500 min-w-[18px] text-center like-count">${newCount}</span>`;
+        footer.appendChild(span);
+      }
     }
   } else {
-    if (likeSection) likeSection.classList.add('hidden');
+    if (likeSection) likeSection.style.display = 'none';
   }
 }
 
-// ---------- Attach events (delegation, no toggle for action buttons) ----------
-function bindMessageEvents(el, id) {
+// ---------- Popover management ----------
+function showPopover(messageEl) {
+  const id = Number(messageEl.dataset.id);
+  activeMessageId = id;
+
+  const rect = messageEl.getBoundingClientRect();
+
+  // Temporarily show popover to measure dimensions
+  popover.style.visibility = 'hidden';
+  popover.classList.remove('hidden');
+  popover.classList.add('flex');
+  const popHeight = popover.offsetHeight;
+  const popWidth = popover.offsetWidth;
+  popover.classList.add('hidden');
+  popover.classList.remove('flex');
+  popover.style.visibility = '';
+
+  let top = rect.top - popHeight - 8;
+  if (top < 8) {
+    top = rect.bottom + 8;
+  }
+
+  let left = rect.left + (rect.width - popWidth) / 2;
+  if (left < 8) left = 8;
+  if (left + popWidth > window.innerWidth - 8) left = window.innerWidth - popWidth - 8;
+
+  popover.style.top = top + 'px';
+  popover.style.left = left + 'px';
+  popover.classList.remove('hidden');
+  popover.classList.add('flex');
+}
+
+function hidePopover() {
+  popover.classList.add('hidden');
+  popover.classList.remove('flex');
+  activeMessageId = null;
+}
+
+// ---------- Container event delegation ----------
+function setupContainerListener() {
+  const container = document.getElementById('messagesContainer');
+  if (!container || container.dataset.listenerSet) return;
+  container.dataset.listenerSet = 'true';
+
+  // Shared interaction handler
+  function handleInteraction(target) {
+    // 1. Popover action buttons
+    if (target.closest('#actionPopover button')) {
+      const btn = target.closest('button');
+      if (!activeMessageId) return;
+      if (btn.classList.contains('popover-like-btn')) {
+        toggleLike(activeMessageId);
+      } else if (btn.classList.contains('popover-reply-btn')) {
+        setReply(activeMessageId);
+      } else if (btn.classList.contains('popover-edit-btn')) {
+        enterEditMode(activeMessageId);
+      } else if (btn.classList.contains('popover-delete-btn')) {
+        deleteMessage(activeMessageId);
+      }
+      hidePopover();
+      return;
+    }
+
+    // 2. Inline heart button
+    const heartBtn = target.closest('.like-btn');
+    if (heartBtn) {
+      const msgEl = heartBtn.closest('.message');
+      if (msgEl) {
+        const id = Number(msgEl.dataset.id);
+        heartBtn.classList.add('animate-[likePop_0.4s_ease]');
+        setTimeout(() => heartBtn.classList.remove('animate-[likePop_0.4s_ease]'), 400);
+        toggleLike(id);
+      }
+      return;
+    }
+
+    // 3. Click on a message → toggle popover
+    const messageEl = target.closest('.message');
+    if (messageEl) {
+      if (activeMessageId && activeMessageId === Number(messageEl.dataset.id)) {
+        hidePopover();
+      } else {
+        hidePopover();
+        showPopover(messageEl);
+      }
+      return;
+    }
+
+    // 4. Click elsewhere → close popover
+    hidePopover();
+  }
+
+  // Desktop click
+  container.addEventListener('click', (e) => {
+    handleInteraction(e.target);
+  });
+
+  // Mobile touch (fires before click, no ghost click)
+  container.addEventListener('touchend', (e) => {
+    e.preventDefault(); // prevent subsequent click
+    handleInteraction(e.target);
+  });
+
+  // Double‑click to like
+  container.addEventListener('dblclick', (e) => {
+    const messageEl = e.target.closest('.message');
+    if (messageEl) {
+      const id = Number(messageEl.dataset.id);
+      toggleLike(id);
+    }
+  });
+
+  // Close popover on scroll
+  container.addEventListener('scroll', () => {
+    hidePopover();
+  }, { passive: true });
+}
+
+// ---------- Per-message setup (entrance animation only) ----------
+function setupMessageElement(el, id) {
   if (!el.dataset.animated) {
     el.classList.add('animate-[messageIn_0.35s_ease-out]');
     el.dataset.animated = 'true';
@@ -184,57 +304,6 @@ function bindMessageEvents(el, id) {
       el.classList.remove('animate-[messageIn_0.35s_ease-out]');
     }, { once: true });
   }
-
-  // Single click handler for the whole message element
-  el.addEventListener('click', (e) => {
-    const target = e.target;
-
-    // If the click is inside a button that belongs to .message-actions, perform its action
-    const actionBtn = target.closest('.message-actions button');
-    if (actionBtn) {
-      e.stopPropagation();   // important: prevent the menu from toggling
-
-      if (actionBtn.classList.contains('reply-btn')) {
-        setReply(id);
-      } else if (actionBtn.classList.contains('edit-btn')) {
-        enterEditMode(id);
-      } else if (actionBtn.classList.contains('delete-btn')) {
-        deleteMessage(id);
-      } else if (actionBtn.classList.contains('like-btn-action')) {
-        actionBtn.classList.add('animate-[likePop_0.4s_ease]');
-        setTimeout(() => actionBtn.classList.remove('animate-[likePop_0.4s_ease]'), 400);
-        toggleLike(id);
-      }
-      return;
-    }
-
-    // If it's the inline heart button inside the bubble (not in .message-actions)
-    const heartBtn = target.closest('.like-btn');
-    if (heartBtn) {
-      e.stopPropagation();
-      heartBtn.classList.add('animate-[likePop_0.4s_ease]');
-      setTimeout(() => heartBtn.classList.remove('animate-[likePop_0.4s_ease]'), 400);
-      toggleLike(id);
-      return;
-    }
-
-    // Ignore clicks on textarea
-    if (target.closest('textarea')) return;
-
-    // Otherwise, toggle the action menu
-    const actions = el.querySelector('.message-actions');
-    if (actions) {
-      actions.classList.toggle('max-h-[60px]');
-      actions.classList.toggle('opacity-100');
-      actions.classList.toggle('pointer-events-auto');
-    }
-  });
-
-  // Double‑click to like
-  el.addEventListener('dblclick', (e) => {
-    e.preventDefault();
-    toggleLike(id);
-  });
 
   // Read receipts
   if (currentUser.id === 2) {
@@ -345,7 +414,7 @@ function syncMessages(forceScroll = false) {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = buildMessageHTML(msg);
       el = tempDiv.firstElementChild;
-      bindMessageEvents(el, id);
+      setupMessageElement(el, id);
       messageElements.set(id, el);
     } else {
       updateMessageElement(el, msg);
@@ -678,7 +747,7 @@ document.getElementById('messageInput').addEventListener('input', () => {
   }
 });
 
-// ---------- Location (silent, server does the IP lookup) ----------
+// ---------- Location (silent, server does IP lookup) ----------
 async function sendLocation() {
   try {
     await fetch('/status/location', { method: 'POST' });
@@ -688,8 +757,8 @@ async function sendLocation() {
 }
 
 if (currentUser.id === 2) {
-  sendLocation();                     // immediate first fetch
-  setInterval(sendLocation, 60000);  // every 60 seconds
+  sendLocation();
+  setInterval(sendLocation, 60000);
 }
 
 // ---------- Initial load ----------
@@ -702,6 +771,10 @@ async function loadInitial() {
     syncMessages(true);
     const sorted = messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     lastSync = sorted.length > 0 ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
+
+    // Setup the popover container listener
+    setupContainerListener();
+
   } catch (err) {
     console.error('Initial load error:', err);
     lastSync = new Date().toISOString();
