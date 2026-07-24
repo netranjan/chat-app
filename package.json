@@ -4,7 +4,8 @@
   "main": "api/server.js",
   "scripts": {
     "start": "node api/server.js",
-    "dev": "nodemon api/server.js"
+    "dev": "nodemon api/server.js",
+    "build:css": "tailwindcss -i ./public/css/tailwind-input.css -o ./public/css/tailwind.css --minify"
   },
   "dependencies": {
     "connect-mongo": "^5.1.0",
@@ -16,6 +17,10 @@
     "node-fetch": "^2.7.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "@tailwindcss/cli": "^4.3.3",
+    "autoprefixer": "^10.5.4",
+    "nodemon": "^3.1.4",
+    "postcss": "^8.5.22",
+    "tailwindcss": "^4.3.3"
   }
 }
