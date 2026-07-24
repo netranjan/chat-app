@@ -13,6 +13,8 @@ async function initialize() {
 
   app = express();
 
+   // 👇 CRITICAL for Render to detect real client IP
+  app.set('trust proxy', 1);
   console.log('Connecting to MongoDB...');
   await connectDB();
   console.log('MongoDB connected.');
