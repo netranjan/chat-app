@@ -168,6 +168,7 @@ function updateMessageElement(el, msg) {
 
 // ---------- Attach events + one‑time entrance animation ----------
 function bindMessageEvents(el, id) {
+  // One-time entrance animation
   if (!el.dataset.animated) {
     el.classList.add('animate-[messageIn_0.35s_ease-out]');
     el.dataset.animated = 'true';
@@ -176,10 +177,12 @@ function bindMessageEvents(el, id) {
     }, { once: true });
   }
 
-  // Parent click handler – toggle actions only if NOT a button/textarea
+  // Parent click – toggle action buttons only if NOT inside .message-actions, button or textarea
   el.addEventListener('click', (e) => {
-    // If the click target (or its parent) is a button or textarea, do nothing
-    if (e.target.closest('button') || e.target.closest('textarea')) return;
+    if (e.target.closest('.message-actions') || 
+        e.target.closest('button') || 
+        e.target.closest('textarea')) return;
+
     const actions = el.querySelector('.message-actions');
     if (actions) {
       actions.classList.toggle('max-h-[60px]');
@@ -188,12 +191,14 @@ function bindMessageEvents(el, id) {
     }
   });
 
+  // Double-click to like
   el.addEventListener('dblclick', (e) => {
     e.preventDefault();
     e.stopPropagation();
     toggleLike(id);
   });
 
+  // Inline heart button (inside bubble footer)
   el.querySelector('.like-btn')?.addEventListener('click', e => {
     e.stopPropagation();
     const btn = e.currentTarget;
@@ -202,6 +207,7 @@ function bindMessageEvents(el, id) {
     toggleLike(id);
   });
 
+  // Action row like button
   el.querySelector('.like-btn-action')?.addEventListener('click', e => {
     e.stopPropagation();
     const btn = e.currentTarget;
@@ -210,22 +216,25 @@ function bindMessageEvents(el, id) {
     toggleLike(id);
   });
 
-  // Reply button – now works without closing actions
+  // Reply button
   el.querySelector('.reply-btn')?.addEventListener('click', e => {
     e.stopPropagation();
     setReply(id);
   });
 
+  // Edit button
   el.querySelector('.edit-btn')?.addEventListener('click', e => {
     e.stopPropagation();
     enterEditMode(id);
   });
+
+  // Delete button
   el.querySelector('.delete-btn')?.addEventListener('click', e => {
     e.stopPropagation();
     deleteMessage(id);
   });
 
-  // Read receipts (manu observes rasuv's messages)
+  // Read receipts (only Manu observes Rasuv's messages)
   if (currentUser.id === 2) {
     const msg = messagesMap.get(id);
     if (msg && msg.senderId === 1 && !(msg.readBy || []).includes(2)) {
@@ -239,7 +248,6 @@ function bindMessageEvents(el, id) {
     }
   }
 }
-
 // ---------- Sentinel management ----------
 function createSentinel() {
   sentinel = document.createElement('div');
