@@ -16,13 +16,15 @@ let unreadCount = 0;
 let sentinel = null;
 let sentinelObserver = null;
 
-// ---------- Notification permission ----------
-document.body.addEventListener('click', function requestNotifPerm() {
-  if (Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
-  document.body.removeEventListener('click', requestNotifPerm);
-}, { once: true });
+// ---------- Notification permission (only for Rasuv) ----------
+if (currentUser.id === 1) {
+  document.body.addEventListener('click', function requestNotifPerm() {
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    document.body.removeEventListener('click', requestNotifPerm);
+  }, { once: true });
+}
 
 // ---------- Time formatting ----------
 function formatTime(isoString) {
@@ -119,7 +121,7 @@ function buildMessageHTML(msg) {
     </div>`;
 }
 
-// ---------- Update element IN PLACE ----------
+// ---------- Update element in place (no rebuild) ----------
 function updateMessageElement(el, msg) {
   if (msg.id !== editingMessageId) {
     const textDiv = el.querySelector('.message-text-content');
@@ -206,10 +208,12 @@ function bindMessageEvents(el, id) {
     toggleLike(id);
   });
 
+  // Reply button – fixed: calls setReply()
   el.querySelector('.reply-btn')?.addEventListener('click', e => {
     e.stopPropagation();
     setReply(id);
   });
+
   el.querySelector('.edit-btn')?.addEventListener('click', e => {
     e.stopPropagation();
     enterEditMode(id);
@@ -219,8 +223,8 @@ function bindMessageEvents(el, id) {
     deleteMessage(id);
   });
 
-  // Read receipts
-  if (currentUser.id === 2) {  // manu observes rasuv's messages
+  // Read receipts (manu observing rasuv's messages)
+  if (currentUser.id === 2) {
     const msg = messagesMap.get(id);
     if (msg && msg.senderId === 1 && !(msg.readBy || []).includes(2)) {
       const observer = new IntersectionObserver(entries => {
@@ -484,19 +488,30 @@ async function editMessage(id, newText) {
   }
 }
 
-// ---------- Reply ----------
+// ---------- Reply (fixed: uses classes to show/hide) ----------
 function setReply(id) {
   replyToId = id;
   const parent = messagesMap.get(id);
+  const previewDiv = document.getElementById('replyPreview');
+  const replyText = document.getElementById('replyText');
+  if (!previewDiv || !replyText) return;
+
   if (parent) {
-    document.getElementById('replyPreview').style.display = 'flex';
-    document.getElementById('replyText').textContent =
-      `Replying to ${parent.senderId === 1 ? 'rasuv' : 'manu'}: ${parent.deleted ? '[deleted]' : parent.text}`;
+    replyText.textContent = `Replying to ${parent.senderId === 1 ? 'rasuv' : 'manu'}: ${parent.deleted ? '[deleted]' : parent.text}`;
+  } else {
+    replyText.textContent = `Replying to message (no longer available)`;
   }
+  previewDiv.classList.remove('hidden');
+  previewDiv.classList.add('flex');
 }
+
 function cancelReply() {
   replyToId = null;
-  document.getElementById('replyPreview').style.display = 'none';
+  const previewDiv = document.getElementById('replyPreview');
+  if (previewDiv) {
+    previewDiv.classList.add('hidden');
+    previewDiv.classList.remove('flex');
+  }
 }
 
 // ---------- Inline editing ----------
@@ -575,7 +590,8 @@ async function poll() {
       }
     });
 
-    if (messagesForNotification.length > 0 &&
+    // Notifications – only for Rasuv
+    if (currentUser.id === 1 && messagesForNotification.length > 0 &&
         document.visibilityState === 'hidden' &&
         Notification.permission === 'granted') {
       const sender = messagesForNotification[0].senderId === 1 ? 'rasuv' : 'manu';
@@ -601,10 +617,12 @@ async function poll() {
         if (data.manuStatus.isTyping) {
           const since = new Date(data.manuStatus.typingUpdatedAt);
           const timeStr = since.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-          typingDiv.style.display = 'flex';
+          typingDiv.classList.remove('hidden');
+          typingDiv.classList.add('flex');
           if (typingText) typingText.textContent = `manu is typing… (since ${timeStr})`;
         } else {
-          typingDiv.style.display = 'none';
+          typingDiv.classList.add('hidden');
+          typingDiv.classList.remove('flex');
         }
       }
     }
@@ -627,10 +645,9 @@ document.addEventListener('visibilitychange', () => {
   setOnline(!document.hidden);
 });
 
-// ---------- Typing indicator ----------
+// ---------- Typing indicator (only manu) ----------
 let typingTimeout;
 document.getElementById('messageInput').addEventListener('input', () => {
-  // Send typing status only if current user is manu (id 2)
   if (currentUser.id === 2) {
     fetch('/status/typing', {
       method: 'POST',
@@ -648,25 +665,16 @@ document.getElementById('messageInput').addEventListener('input', () => {
   }
 });
 
-// ---------- Location (silent IP‑based, no permission) ----------
-// ---------- Location (server does the IP lookup, no third‑party call from browser) ----------
+// ---------- Location (silent, server does the IP lookup) ----------
 async function sendLocation() {
   try {
-    const res = await fetch('/status/location', { method: 'POST' });
-    const data = await res.json();
-    console.log('Location update response:', data);
+    await fetch('/status/location', { method: 'POST' });
   } catch (e) {
     console.error('Location update failed:', e);
   }
 }
 
-// ---------- Start location sending only for Manu (id 2) ----------
-if (currentUser.id === 2) {
-  sendLocation();                     // immediate first fetch
-  setInterval(sendLocation, 60000);  // every 60 seconds
-}
-
-// ---------- Start location sending only for Manu (id 2) ----------
+// Only manu sends location
 if (currentUser.id === 2) {
   sendLocation();                     // immediate first fetch
   setInterval(sendLocation, 60000);  // every 60 seconds
