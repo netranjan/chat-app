@@ -168,7 +168,7 @@ function updateMessageElement(el, msg) {
 
 // ---------- Attach events + one‑time entrance animation ----------
 function bindMessageEvents(el, id) {
-  // One-time entrance animation
+  // One‑time entrance animation
   if (!el.dataset.animated) {
     el.classList.add('animate-[messageIn_0.35s_ease-out]');
     el.dataset.animated = 'true';
@@ -177,12 +177,37 @@ function bindMessageEvents(el, id) {
     }, { once: true });
   }
 
-  // Parent click – toggle action buttons only if NOT inside .message-actions, button or textarea
+  // Single click handler for the whole message
   el.addEventListener('click', (e) => {
-    if (e.target.closest('.message-actions') || 
-        e.target.closest('button') || 
-        e.target.closest('textarea')) return;
+    const target = e.target;
 
+    // 1. Click on a button inside .message-actions (or the heart button in the bubble)
+    const actionBtn = target.closest('.message-actions button') || target.closest('.like-btn');
+    if (actionBtn) {
+      e.stopPropagation();   // prevent the menu from toggling
+
+      if (actionBtn.classList.contains('like-btn') || actionBtn.classList.contains('like-btn-action')) {
+        // Animate and toggle like
+        actionBtn.classList.add('animate-[likePop_0.4s_ease]');
+        setTimeout(() => actionBtn.classList.remove('animate-[likePop_0.4s_ease]'), 400);
+        toggleLike(id);
+      }
+      else if (actionBtn.classList.contains('reply-btn')) {
+        setReply(id);
+      }
+      else if (actionBtn.classList.contains('edit-btn')) {
+        enterEditMode(id);
+      }
+      else if (actionBtn.classList.contains('delete-btn')) {
+        deleteMessage(id);
+      }
+      return;   // done
+    }
+
+    // 2. Click on a textarea (ignore)
+    if (target.closest('textarea')) return;
+
+    // 3. Click anywhere else on the message → toggle the action buttons
     const actions = el.querySelector('.message-actions');
     if (actions) {
       actions.classList.toggle('max-h-[60px]');
@@ -191,50 +216,14 @@ function bindMessageEvents(el, id) {
     }
   });
 
-  // Double-click to like
+  // Double‑click to like (still works on the whole message)
   el.addEventListener('dblclick', (e) => {
     e.preventDefault();
     e.stopPropagation();
     toggleLike(id);
   });
 
-  // Inline heart button (inside bubble footer)
-  el.querySelector('.like-btn')?.addEventListener('click', e => {
-    e.stopPropagation();
-    const btn = e.currentTarget;
-    btn.classList.add('animate-[likePop_0.4s_ease]');
-    setTimeout(() => btn.classList.remove('animate-[likePop_0.4s_ease]'), 400);
-    toggleLike(id);
-  });
-
-  // Action row like button
-  el.querySelector('.like-btn-action')?.addEventListener('click', e => {
-    e.stopPropagation();
-    const btn = e.currentTarget;
-    btn.classList.add('animate-[likePop_0.4s_ease]');
-    setTimeout(() => btn.classList.remove('animate-[likePop_0.4s_ease]'), 400);
-    toggleLike(id);
-  });
-
-  // Reply button
-  el.querySelector('.reply-btn')?.addEventListener('click', e => {
-    e.stopPropagation();
-    setReply(id);
-  });
-
-  // Edit button
-  el.querySelector('.edit-btn')?.addEventListener('click', e => {
-    e.stopPropagation();
-    enterEditMode(id);
-  });
-
-  // Delete button
-  el.querySelector('.delete-btn')?.addEventListener('click', e => {
-    e.stopPropagation();
-    deleteMessage(id);
-  });
-
-  // Read receipts (only Manu observes Rasuv's messages)
+  // Read receipts (unchanged)
   if (currentUser.id === 2) {
     const msg = messagesMap.get(id);
     if (msg && msg.senderId === 1 && !(msg.readBy || []).includes(2)) {
@@ -248,6 +237,7 @@ function bindMessageEvents(el, id) {
     }
   }
 }
+
 // ---------- Sentinel management ----------
 function createSentinel() {
   sentinel = document.createElement('div');
