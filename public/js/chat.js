@@ -9,6 +9,8 @@ let lastSync = null;
 let replyToId = null;
 let tempMsgCounter = -1;
 let editingMessageId = null;
+let initialLoadComplete = false;          // ✅ controls entrance animations
+let typingInterval = null;                // ✅ NEW – for live typing duration
 
 // Scroll state
 let shouldAutoScroll = true;
@@ -184,7 +186,7 @@ function showPopover(messageEl) {
 
   const rect = messageEl.getBoundingClientRect();
 
-  // Temporarily show to measure dimensions
+  // Temporarily show popover to measure dimensions
   popover.style.visibility = 'hidden';
   popover.classList.remove('hidden');
   popover.classList.add('flex');
@@ -197,14 +199,12 @@ function showPopover(messageEl) {
   // Try placing above the message
   let top = rect.top - popHeight - 8;
   if (top < 8) {
-    // Not enough room above → try below
     top = rect.bottom + 8;
   }
 
-  // ✅ NEW: ensure the popover doesn’t go below the viewport
+  // Prevent popover from going below viewport
   const maxTop = window.innerHeight - popHeight - 8;
   if (top > maxTop) {
-    // If below also doesn’t fit, force it to stay inside (even if it clips a little)
     top = Math.max(8, rect.top - popHeight - 8);
   }
 
@@ -233,12 +233,9 @@ function setupContainerListener() {
   if (!container || container.dataset.listenerSet) return;
   container.dataset.listenerSet = 'true';
 
-  // ✅ Prevent ghost clicks after touch
   let touchJustHappened = false;
 
-  // Shared interaction handler
   function handleInteraction(target) {
-    // 1. Popover action buttons
     if (target.closest('#actionPopover button')) {
       const btn = target.closest('button');
       if (!activeMessageId) return;
@@ -255,7 +252,6 @@ function setupContainerListener() {
       return;
     }
 
-    // 2. Inline heart button
     const heartBtn = target.closest('.like-btn');
     if (heartBtn) {
       const msgEl = heartBtn.closest('.message');
@@ -268,7 +264,6 @@ function setupContainerListener() {
       return;
     }
 
-    // 3. Click on a message → toggle popover
     const messageEl = target.closest('.message');
     if (messageEl) {
       if (activeMessageId && activeMessageId === Number(messageEl.dataset.id)) {
@@ -280,25 +275,21 @@ function setupContainerListener() {
       return;
     }
 
-    // 4. Click elsewhere → close popover
     hidePopover();
   }
 
-  // Desktop click – ignore if a touch just happened
   container.addEventListener('click', (e) => {
     if (touchJustHappened) return;
     handleInteraction(e.target);
   });
 
-  // Mobile touch (fires before click)
   container.addEventListener('touchend', (e) => {
-    e.preventDefault(); // prevent subsequent click
+    e.preventDefault();
     touchJustHappened = true;
     setTimeout(() => { touchJustHappened = false; }, 300);
     handleInteraction(e.target);
   });
 
-  // Double‑click to like
   container.addEventListener('dblclick', (e) => {
     const messageEl = e.target.closest('.message');
     if (messageEl) {
@@ -307,23 +298,23 @@ function setupContainerListener() {
     }
   });
 
-  // Close popover on scroll
   container.addEventListener('scroll', () => {
     hidePopover();
   }, { passive: true });
 }
 
-// ---------- Per-message setup (entrance animation only) ----------
+// ---------- Per-message setup ----------
 function setupMessageElement(el, id) {
   if (!el.dataset.animated) {
-    el.classList.add('animate-[messageIn_0.35s_ease-out]');
+    if (initialLoadComplete) {
+      el.classList.add('animate-[messageIn_0.35s_ease-out]');
+    }
     el.dataset.animated = 'true';
     el.addEventListener('animationend', () => {
       el.classList.remove('animate-[messageIn_0.35s_ease-out]');
     }, { once: true });
   }
 
-  // Read receipts
   if (currentUser.id === 2) {
     const msg = messagesMap.get(id);
     if (msg && msg.senderId === 1 && !(msg.readBy || []).includes(2)) {
@@ -652,6 +643,54 @@ function enterEditMode(id) {
   };
 }
 
+// ---------- ✅ UPDATED: Typing helper with live duration ----------
+function updateTypingDuration(startTime) {
+  const typingText = document.getElementById('typingText');
+  if (!typingText) return;
+
+  const now = new Date();
+  const diff = Math.floor((now - new Date(startTime)) / 1000);
+  let durationStr;
+  if (diff < 5) {
+    durationStr = 'just now';
+  } else if (diff < 60) {
+    durationStr = `${diff}s ago`;
+  } else {
+    const mins = Math.floor(diff / 60);
+    durationStr = `${mins}m ago`;
+  }
+  typingText.textContent = `manu is typing… (${durationStr})`;
+}
+
+function showTypingIndicator(manuStatus) {
+  const typingDiv = document.getElementById('typingIndicator');
+  const typingText = document.getElementById('typingText');
+  if (!typingDiv || !typingText) return;
+
+  if (manuStatus && manuStatus.isTyping) {
+    typingDiv.classList.remove('hidden');
+    typingDiv.classList.add('flex');
+
+    // Clear any previous interval
+    if (typingInterval) clearInterval(typingInterval);
+
+    // Update immediately
+    updateTypingDuration(manuStatus.typingUpdatedAt);
+
+    // Then update every second
+    typingInterval = setInterval(() => {
+      updateTypingDuration(manuStatus.typingUpdatedAt);
+    }, 1000);
+  } else {
+    typingDiv.classList.add('hidden');
+    typingDiv.classList.remove('flex');
+    if (typingInterval) {
+      clearInterval(typingInterval);
+      typingInterval = null;
+    }
+  }
+}
+
 // ---------- Polling ----------
 async function poll() {
   try {
@@ -710,21 +749,9 @@ async function poll() {
 
     syncMessages(false);
 
-    if (currentUser.id === 1 && data.manuStatus) {
-      const typingDiv = document.getElementById('typingIndicator');
-      const typingText = document.getElementById('typingText');
-      if (typingDiv) {
-        if (data.manuStatus.isTyping) {
-          const since = new Date(data.manuStatus.typingUpdatedAt);
-          const timeStr = since.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-          typingDiv.classList.remove('hidden');
-          typingDiv.classList.add('flex');
-          if (typingText) typingText.textContent = `manu is typing… (since ${timeStr})`;
-        } else {
-          typingDiv.classList.add('hidden');
-          typingDiv.classList.remove('flex');
-        }
-      }
+    // ✅ Handle typing indicator for Rasuv
+    if (currentUser.id === 1) {
+      showTypingIndicator(data.manuStatus);
     }
   } catch (err) {
     // ignore
@@ -786,16 +813,19 @@ async function loadInitial() {
     if (!res.ok) throw new Error('Could not load messages');
     const messages = await res.json();
     messages.forEach(m => messagesMap.set(m.id, m));
+
+    initialLoadComplete = false;
     syncMessages(true);
+    initialLoadComplete = true;
+
     const sorted = messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     lastSync = sorted.length > 0 ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
 
-    // Setup the popover container listener
     setupContainerListener();
-
   } catch (err) {
     console.error('Initial load error:', err);
     lastSync = new Date().toISOString();
+    initialLoadComplete = true;
   }
 }
 
@@ -881,5 +911,5 @@ document.getElementById('emojiBtn')?.addEventListener('click', () => {
 
 // ---------- Start everything ----------
 loadInitial().finally(() => {
-  setInterval(poll, 500);
+  setInterval(poll, 1000);   
 });

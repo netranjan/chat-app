@@ -1,18 +1,18 @@
+// controllers/pollController.js
 const { getChanges } = require('../services/message.service');
-const { getUserByUsername } = require('../services/auth.service');
+const { getStatus } = require('../services/userStatusStore');   // ← changed
 
 exports.poll = async (req, res) => {
   try {
     const lastSync = req.query.lastSync;
     const changes = await getChanges(lastSync);
 
-    // Determine the new timestamp – use the latest message timestamp if any, else keep the old one
+    // Determine the new timestamp (unchanged)
     let newTimestamp = lastSync;
     const allMessages = [...changes.newMessages, ...changes.editedMessages];
     if (allMessages.length > 0) {
       const timestamps = allMessages.map(m => new Date(m.timestamp).getTime());
       const maxTimestamp = new Date(Math.max(...timestamps)).toISOString();
-      // Also consider editedAt and likesUpdatedAt for edited messages
       const editTimestamps = changes.editedMessages
         .flatMap(m => [new Date(m.editedAt).getTime(), new Date(m.likesUpdatedAt).getTime()])
         .filter(t => !isNaN(t));
@@ -24,20 +24,17 @@ exports.poll = async (req, res) => {
       }
     }
 
+    // ✅ Read Manu's live status from the shared in‑memory store
     let manuStatus = null;
     if (req.session.user?.id === 1) {
-      try {
-        const manu = await getUserByUsername('manu');
-        if (manu) {
-          manuStatus = {
-            isOnline: manu.isOnline,
-            lastSeen: manu.lastSeen,
-            isTyping: manu.isTyping,
-            typingUpdatedAt: manu.typingUpdatedAt
-          };
-        }
-      } catch (err) {
-        console.error('Error fetching manu status:', err);
+      const status = getStatus(2);   // Manu's user ID
+      if (status) {
+        manuStatus = {
+          isOnline: status.isOnline,
+          lastSeen: status.lastSeen,
+          isTyping: status.isTyping,
+          typingUpdatedAt: status.typingUpdatedAt
+        };
       }
     }
 
