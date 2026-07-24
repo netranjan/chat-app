@@ -52,7 +52,7 @@ function getDateLabel(isoString) {
   return date.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
-// ---------- Build HTML ----------
+// ---------- Build HTML (toggle menu, heart hidden when 0 likes) ----------
 function buildMessageHTML(msg) {
   const isMine = msg.senderId === currentUser.id;
   const senderName = msg.senderId === 1 ? 'rasuv' : 'manu';
@@ -97,6 +97,14 @@ function buildMessageHTML(msg) {
     ? (msg.readBy && msg.readBy.length > 0 ? '✓✓' : '✓')
     : '';
 
+  // Heart only visible when likes > 0
+  const likeSection = likeCount > 0
+    ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/5 like-section">
+         <button class="like-btn text-pink-500 border-0 bg-transparent cursor-pointer text-lg p-1">❤️</button>
+         <span class="text-sm font-semibold text-gray-500 min-w-[18px] text-center like-count">${likeCount}</span>
+       </span>`
+    : '';
+
   return `
     <div class="${baseClasses}" data-id="${msg.id}">
       <div class="text-xs font-semibold mb-0.5 text-gray-500">${senderName}</div>
@@ -106,12 +114,10 @@ function buildMessageHTML(msg) {
         <div class="flex items-center justify-end gap-2 mt-1">
           <span class="text-[11px] text-gray-500 message-time-span">${formatTime(msg.timestamp)}${editedBadge}</span>
           ${readReceipt ? `<span class="text-[11px] text-gray-600 ml-1 read-receipt">${readReceipt}</span>` : ''}
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/5 like-section ${likeCount === 0 ? 'hidden' : ''}">
-            <button class="like-btn text-pink-500 border-0 bg-transparent cursor-pointer text-lg p-1">❤️</button>
-            <span class="text-sm font-semibold text-gray-500 min-w-[18px] text-center like-count">${likeCount}</span>
-          </span>
+          ${likeSection}
         </div>
       </div>
+      <!-- Hidden by default, toggled on tap -->
       <div class="flex gap-1 mt-1.5 flex-wrap max-h-0 overflow-hidden opacity-0 transition-all duration-300 pointer-events-none message-actions">
         <button class="like-btn-action px-3 py-1 rounded-full text-sm bg-black/5 text-gray-500 hover:bg-black/10 hover:text-gray-900 transition">❤️</button>
         <button class="reply-btn px-3 py-1 rounded-full text-sm bg-black/5 text-gray-500 hover:bg-black/10 hover:text-gray-900 transition">↩ Reply</button>
@@ -121,7 +127,7 @@ function buildMessageHTML(msg) {
     </div>`;
 }
 
-// ---------- Update element in place (no rebuild) ----------
+// ---------- Update element in place ----------
 function updateMessageElement(el, msg) {
   if (msg.id !== editingMessageId) {
     const textDiv = el.querySelector('.message-text-content');
@@ -152,23 +158,25 @@ function updateMessageElement(el, msg) {
     }
   }
 
+  // Show/hide heart based on likes
   const likeSection = el.querySelector('.like-section');
   const likeCountSpan = el.querySelector('.like-count');
   const newCount = msg.likes ? msg.likes.length : 0;
-  if (likeSection) {
-    if (newCount > 0) {
+  if (newCount > 0) {
+    if (!likeSection) {
+      // If heart is missing entirely (unlikely, but possible on first load if 0 likes)
+      // we rebuild the element. In practice, we never rebuild, so skip.
+    } else {
       likeSection.classList.remove('hidden');
       if (likeCountSpan) likeCountSpan.textContent = newCount;
-    } else {
-      likeSection.classList.add('hidden');
-      if (likeCountSpan) likeCountSpan.textContent = '0';
     }
+  } else {
+    if (likeSection) likeSection.classList.add('hidden');
   }
 }
 
-// ---------- Attach events + one‑time entrance animation ----------
+// ---------- Attach events (delegation, no toggle for action buttons) ----------
 function bindMessageEvents(el, id) {
-  // One‑time entrance animation
   if (!el.dataset.animated) {
     el.classList.add('animate-[messageIn_0.35s_ease-out]');
     el.dataset.animated = 'true';
@@ -177,37 +185,43 @@ function bindMessageEvents(el, id) {
     }, { once: true });
   }
 
-  // Single click handler for the whole message
+  // Single click handler for the whole message element
   el.addEventListener('click', (e) => {
     const target = e.target;
 
-    // 1. Click on a button inside .message-actions (or the heart button in the bubble)
-    const actionBtn = target.closest('.message-actions button') || target.closest('.like-btn');
+    // If the click is inside a button that belongs to .message-actions, perform its action
+    const actionBtn = target.closest('.message-actions button');
     if (actionBtn) {
-      e.stopPropagation();   // prevent the menu from toggling
+      e.stopPropagation();   // important: prevent the menu from toggling
 
-      if (actionBtn.classList.contains('like-btn') || actionBtn.classList.contains('like-btn-action')) {
-        // Animate and toggle like
+      if (actionBtn.classList.contains('reply-btn')) {
+        setReply(id);
+      } else if (actionBtn.classList.contains('edit-btn')) {
+        enterEditMode(id);
+      } else if (actionBtn.classList.contains('delete-btn')) {
+        deleteMessage(id);
+      } else if (actionBtn.classList.contains('like-btn-action')) {
         actionBtn.classList.add('animate-[likePop_0.4s_ease]');
         setTimeout(() => actionBtn.classList.remove('animate-[likePop_0.4s_ease]'), 400);
         toggleLike(id);
       }
-      else if (actionBtn.classList.contains('reply-btn')) {
-        setReply(id);
-      }
-      else if (actionBtn.classList.contains('edit-btn')) {
-        enterEditMode(id);
-      }
-      else if (actionBtn.classList.contains('delete-btn')) {
-        deleteMessage(id);
-      }
-      return;   // done
+      return;
     }
 
-    // 2. Click on a textarea (ignore)
+    // If it's the inline heart button inside the bubble (not in .message-actions)
+    const heartBtn = target.closest('.like-btn');
+    if (heartBtn) {
+      e.stopPropagation();
+      heartBtn.classList.add('animate-[likePop_0.4s_ease]');
+      setTimeout(() => heartBtn.classList.remove('animate-[likePop_0.4s_ease]'), 400);
+      toggleLike(id);
+      return;
+    }
+
+    // Ignore clicks on textarea
     if (target.closest('textarea')) return;
 
-    // 3. Click anywhere else on the message → toggle the action buttons
+    // Otherwise, toggle the action menu
     const actions = el.querySelector('.message-actions');
     if (actions) {
       actions.classList.toggle('max-h-[60px]');
@@ -216,14 +230,13 @@ function bindMessageEvents(el, id) {
     }
   });
 
-  // Double‑click to like (still works on the whole message)
+  // Double‑click to like
   el.addEventListener('dblclick', (e) => {
     e.preventDefault();
-    e.stopPropagation();
     toggleLike(id);
   });
 
-  // Read receipts (unchanged)
+  // Read receipts
   if (currentUser.id === 2) {
     const msg = messagesMap.get(id);
     if (msg && msg.senderId === 1 && !(msg.readBy || []).includes(2)) {
@@ -488,7 +501,7 @@ async function editMessage(id, newText) {
   }
 }
 
-// ---------- Reply (fixed: uses classes to show/hide) ----------
+// ---------- Reply ----------
 function setReply(id) {
   replyToId = id;
   const parent = messagesMap.get(id);
@@ -674,7 +687,6 @@ async function sendLocation() {
   }
 }
 
-// Only manu sends location
 if (currentUser.id === 2) {
   sendLocation();                     // immediate first fetch
   setInterval(sendLocation, 60000);  // every 60 seconds
