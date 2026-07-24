@@ -1,0 +1,4 @@
+{
+  "watch": ["api", "views", "public"],
+  "ext": "js,mjs,json,ejs,css"
+}

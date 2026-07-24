@@ -1,4 +1,7 @@
-// Dashboard for rasuv
+// ==========================
+//  Admin Dashboard – Rasuv only
+// ==========================
+
 const dashBtn = document.getElementById('dashboardToggle');
 const modal = document.getElementById('dashboardModal');
 const closeBtn = document.getElementById('closeDashboard');
@@ -7,21 +10,22 @@ const dashboardData = document.getElementById('dashboardData');
 let dashInterval;
 
 dashBtn.addEventListener('click', () => {
-  // Use the 'active' class so the CSS transition works
-  modal.classList.add('active');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
   fetchDashboard();
   dashInterval = setInterval(fetchDashboard, 3000);
 });
 
 closeBtn.addEventListener('click', () => {
-  modal.classList.remove('active');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
   clearInterval(dashInterval);
 });
 
-// Also close when clicking the dark backdrop (outside the content area)
 modal.addEventListener('click', (e) => {
   if (e.target === modal) {
-    modal.classList.remove('active');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
     clearInterval(dashInterval);
   }
 });
@@ -34,21 +38,29 @@ async function fetchDashboard() {
     users.forEach(u => {
       const onlineClass = u.isOnline ? 'online' : 'offline';
       const statusText = u.isOnline ? 'Online' : 'Offline';
-      html += `<h3><span class="status-dot ${onlineClass}"></span> ${u.username} – ${statusText}</h3>`;
-      html += `<p>Last seen: ${new Date(u.lastSeen).toLocaleString()}</p>`;
+      html += `<h3 class="text-lg font-semibold mt-4 mb-2 text-blue-600 border-b-2 border-gray-100 pb-1">
+                <span class="inline-block w-2.5 h-2.5 rounded-full mr-2 ${u.isOnline ? 'bg-green-500' : 'bg-gray-300'}"></span>
+                ${u.username} – ${statusText}
+              </h3>`;
+      html += `<p class="text-sm text-gray-600 mb-1">Last seen: ${u.lastSeen ? new Date(u.lastSeen).toLocaleString() : '—'}</p>`;
       if (u.isTyping) {
-        const since = new Date(u.typingUpdatedAt);
-        html += `<p class="typing-active">Typing since: ${since.toLocaleTimeString()}</p>`;
+        const since = u.typingUpdatedAt ? new Date(u.typingUpdatedAt).toLocaleTimeString() : 'unknown';
+        html += `<p class="text-pink-600 font-medium">Typing since: ${since}</p>`;
       }
-      if (u.currentLocation && u.username === 'manu') {
-        html += `<div class="location-details">`;
-        html += `<p>📍 ${u.currentLocation.city}, ${u.currentLocation.state}, ${u.currentLocation.country}</p>`;
-        html += `<p>🌐 ISP: ${u.currentLocation.isp}, IP: ${u.currentLocation.ip}</p>`;
-        html += `</div>`;
+      if (u.username === 'manu' && u.currentLocation) {
+        const loc = u.currentLocation;
+        html += `<div class="bg-gray-50 rounded-xl p-3 mt-2 text-sm text-gray-700">
+                  <p class="font-semibold">📍 Location</p>
+                  <p>${loc.city || ''}, ${loc.state || ''}, ${loc.country || ''}</p>
+                  <p>🌐 ISP: ${loc.isp || '—'}, IP: ${loc.ip || '—'}</p>
+                  <p class="text-xs text-gray-400">Last updated: ${loc.updatedAt ? new Date(loc.updatedAt).toLocaleString() : '—'}</p>
+                </div>`;
+      } else if (u.username === 'manu' && !u.currentLocation) {
+        html += `<p class="text-sm text-gray-400 italic mt-1">Waiting for location data…</p>`;
       }
     });
-    dashboardData.innerHTML = html;
+    dashboardData.innerHTML = html || '<p class="text-gray-500">No users found.</p>';
   } catch(e) {
-    // silently ignore errors
+    dashboardData.innerHTML = '<p class="text-red-500">Could not load dashboard data.</p>';
   }
 }

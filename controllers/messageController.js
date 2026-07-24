@@ -13,6 +13,13 @@ exports.getMessages = async (req, res) => {
 
 exports.sendMessage = async (req, res) => {
   try {
+
+
+    console.log('sendMessage controller called');
+    console.log('req.body:', req.body);
+    console.log('req.session:', req.session);
+    console.log('userId from session:', req.session.userId);
+    
     const { text, replyTo } = req.body;
     const senderId = req.session.user?.id;
     if (!senderId) return res.status(401).json({ success: false, message: 'Not logged in' });

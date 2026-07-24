@@ -4,73 +4,120 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Campusfify Chat</title>
+
+  <!-- Google Fonts – only Inter (clean, readable) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/chat.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6 icons (for header buttons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <!-- Tailwind CSS Play CDN (no build step) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Tiny custom CSS – only animations & scrollbar that Tailwind can’t handle -->
+  <link rel="stylesheet" href="/css/tiny-chat.css">
+
+  <!-- Optional Tailwind config inline -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
 </head>
-<body>
-  <header class="chat-header">
-    <div class="header-left">
-      <a href="/" class="back-btn" title="Home">←</a>
-      <div class="avatar" style="background: linear-gradient(135deg, #e91e63, #c2185b);">
+<body class="font-sans bg-[#f5f7fb] text-[#1a1a2e] h-full max-h-screen flex flex-col overflow-hidden">
+
+  <!-- HEADER -->
+  <header class="bg-white/90 backdrop-blur-md flex items-center justify-between px-4 py-2 gap-2 border-b border-black/5 min-h-[60px] z-10 flex-nowrap">
+    <!-- Left: back + avatar + chat name -->
+    <div class="flex items-center gap-3 flex-1 min-w-0">
+      <a href="/" class="text-gray-500 hover:text-gray-900 p-2 rounded-full transition text-xl">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+      <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold uppercase bg-gradient-to-br from-pink-500 to-pink-700 shadow-lg shadow-pink-500/20">
         <% if (user.id === 1) { %>R<% } else { %>M<% } %>
       </div>
-      <div class="chat-info">
-        <div class="chat-name">
+      <div class="min-w-0 flex-1">
+        <div class="text-[17px] font-semibold truncate tracking-tight">
           <% if (user.id === 1) { %>Chat with Manu<% } else { %>Chat with Rasuv<% } %>
         </div>
       </div>
     </div>
-    <div class="header-right">
-      <!-- 🆕 Refresh button (always visible) -->
-      <button id="refreshChatBtn" class="header-btn btn-refresh"><span>🔄</span> Refresh</button>
+
+    <!-- Right: action buttons -->
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button id="refreshChatBtn" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 transition min-h-[44px]">
+        <i class="fas fa-sync-alt"></i> <span class="hidden sm:inline">Refresh</span>
+      </button>
 
       <% if (user.id === 1) { %>
-        <button id="dashboardToggle" class="header-btn btn-dashboard">📊 Dashboard</button>
-        <button id="clearChatBtn" class="header-btn btn-clear"><span>🗑️</span> Clear</button>
+        <button id="dashboardToggle" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium bg-gray-50 text-gray-600 hover:bg-gray-100 transition min-h-[44px]">
+          <i class="fas fa-chart-bar"></i> <span class="hidden sm:inline">Dashboard</span>
+        </button>
+        <button id="clearChatBtn" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition min-h-[44px]">
+          <i class="fas fa-trash-alt"></i> <span class="hidden sm:inline">Clear</span>
+        </button>
       <% } %>
-      <a href="/logout" class="header-btn btn-logout"><span>🚪</span> Logout</a>
+      <a href="/logout" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition min-h-[44px] no-underline">
+        <i class="fas fa-sign-out-alt"></i> <span class="hidden sm:inline">Logout</span>
+      </a>
     </div>
   </header>
 
-  <div class="chat-messages-container" id="messagesContainer"></div>
+  <!-- MESSAGES CONTAINER -->
+  <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 pb-2 bg-[#f0f2f8] flex flex-col gap-[1px]">
+    <!-- dynamically filled by JS -->
+  </div>
 
-  <button id="newMessagesBtn" class="new-messages-btn" style="display:none;">
-    ↓ <span id="newMsgCount">0</span> new message(s)
+  <!-- NEW MESSAGES FLOATING BUTTON (count only) -->
+  <button id="newMessagesBtn" class="fixed bottom-24 right-5 bg-green-500 text-white rounded-full px-5 py-2.5 text-sm font-semibold shadow-lg shadow-green-500/20 z-50 hidden items-center gap-2 hover:scale-105 active:scale-95 transition-transform animate-bounceIn">
+    ↓ <span id="newMsgCount">0</span>
   </button>
 
-  <div class="typing-indicator" id="typingIndicator" style="display:none">
-    <div class="typing-dots">
-      <span></span><span></span><span></span>
+  <!-- TYPING INDICATOR -->
+  <div id="typingIndicator" class="hidden items-center gap-2 px-4 py-1.5 shrink-0">
+    <div class="flex gap-1">
+      <span class="w-2 h-2 rounded-full bg-pink-500 animate-bounce"></span>
+      <span class="w-2 h-2 rounded-full bg-pink-500 animate-bounce [animation-delay:0.2s]"></span>
+      <span class="w-2 h-2 rounded-full bg-pink-500 animate-bounce [animation-delay:0.4s]"></span>
     </div>
-    <span class="typing-text" id="typingText">manu is typing…</span>
+    <span id="typingText" class="text-sm text-gray-500">manu is typing…</span>
   </div>
 
-  <div class="reply-input-area" id="replyPreview" style="display:none">
-    <div class="reply-quote" id="replyText"></div>
-    <button type="button" class="cancel-reply" id="cancelReply">×</button>
+  <!-- REPLY PREVIEW -->
+  <div id="replyPreview" class="hidden items-center gap-3 px-4 py-2 bg-white/80 backdrop-blur border-t border-black/5 shrink-0">
+    <div id="replyText" class="flex-1 text-sm text-gray-500 py-1.5 px-3 bg-gray-50 rounded-xl border-l-2 border-pink-500 truncate"></div>
+    <button id="cancelReply" class="text-gray-500 hover:text-red-500 p-1 rounded-full transition hover:rotate-90 text-xl">×</button>
   </div>
 
-  <form id="messageForm" class="chat-input-area">
-    <div class="input-wrapper">
-      <button type="button" class="emoji-btn" id="emojiBtn">😊</button>
-      <textarea id="messageInput" placeholder="Type a message..." rows="1"></textarea>
+  <!-- INPUT AREA -->
+  <form id="messageForm" class="flex gap-2 px-4 py-2.5 pb-3.5 bg-white border-t border-black/5 shrink-0 items-center">
+    <div class="flex-1 flex items-center bg-gray-100 rounded-full pl-3 pr-1 border border-transparent focus-within:bg-white focus-within:border-pink-500 focus-within:shadow-[0_0_0_3px_rgba(233,30,99,0.06)] transition">
+      <button type="button" id="emojiBtn" class="text-gray-500 hover:text-pink-500 p-1 transition">😊</button>
+      <textarea id="messageInput" placeholder="Type a message..." rows="1" class="flex-1 px-1 py-2 border-0 bg-transparent resize-none text-base leading-relaxed max-h-28 outline-none font-sans"></textarea>
     </div>
-    <button type="submit" class="send-btn" id="sendBtn">Send</button>
+    <button type="submit" id="sendBtn" class="px-5 py-2 rounded-full bg-gradient-to-r from-pink-500 to-pink-700 text-white font-semibold shadow-md shadow-pink-500/20 hover:scale-105 active:scale-95 transition disabled:opacity-40 disabled:pointer-events-none">Send</button>
   </form>
 
+  <!-- DASHBOARD MODAL (rasuv only) -->
   <% if (user.id === 1) { %>
-    <div class="dashboard-modal" id="dashboardModal" >
-      <div class="dashboard-content">
-        <span class="close-dashboard" id="closeDashboard">&times;</span>
-        <h2>Admin Dashboard</h2>
+    <div id="dashboardModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden justify-center items-center z-[10000]" onclick="if(event.target===this) this.classList.add('hidden')">
+      <div class="bg-white rounded-3xl p-8 w-[90%] max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl relative animate-dashSlideIn">
+        <span id="closeDashboard" class="absolute top-4 right-5 text-2xl text-gray-400 hover:text-pink-500 hover:rotate-90 transition cursor-pointer">&times;</span>
+        <h2 class="text-2xl font-semibold mb-6">Admin Dashboard</h2>
         <div id="dashboardData">Loading...</div>
       </div>
     </div>
   <% } %>
 
-  <!-- viewport height fix for mobile -->
+  <!-- Viewport height fix for mobile -->
   <script>
     function setViewportHeight() {
       document.body.style.height = window.innerHeight + 'px';

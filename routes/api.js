@@ -1,3 +1,4 @@
+const express = require('express');
 const router = require('express').Router();
 const msg = require('../controllers/messageController');
 const status = require('../controllers/statusController');
@@ -8,9 +9,13 @@ const { isAuthenticated } = require('../middleware/auth');
 // Auth
 router.post('/login', auth.login);
 
+const statusRoutes = require('./status');
+router.use('/status', statusRoutes);
+
 // Messages
 router.get('/api/messages', isAuthenticated, msg.getMessages);
 router.post('/messages', isAuthenticated, msg.sendMessage);
+
 router.put('/messages/:id', isAuthenticated, msg.editMessage);
 router.delete('/messages/all', isAuthenticated, msg.deleteAll);   // ← moved up
 router.delete('/messages/:id', isAuthenticated, msg.deleteMessage);

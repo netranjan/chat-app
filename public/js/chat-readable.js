@@ -36,6 +36,19 @@ function formatTime(isoString) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) + ` at ${timeStr}`;
 }
 
+// ---------- Date label helper (for separators) ----------
+function getDateLabel(isoString) {
+  const date = new Date(isoString);
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+  if (isToday) return 'Today';
+  if (isYesterday) return 'Yesterday';
+  return date.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
 // ---------- Build HTML for one message element ----------
 function buildMessageHTML(msg) {
   const isMine = msg.senderId === currentUser.id;
@@ -62,6 +75,14 @@ function buildMessageHTML(msg) {
     ? (msg.readBy && msg.readBy.length > 0 ? '✓✓' : '✓')
     : '';
 
+  // Heart & count only visible when likes > 0
+  const likeSection = likeCount > 0
+    ? `<span class="message-like">
+         <button class="like-btn ${isLiked ? 'liked' : ''}">❤️</button>
+         <span class="like-count">${likeCount}</span>
+       </span>`
+    : '';
+
   return `
     <div class="${classList}" data-id="${msg.id}">
       <div class="message-sender">${senderName}</div>
@@ -71,10 +92,7 @@ function buildMessageHTML(msg) {
         <div class="message-footer">
           <span class="message-time">${formatTime(msg.timestamp)}${editedBadge}</span>
           ${readReceipt ? `<span class="read-receipt" style="font-size:11px;color:#666;margin-left:4px;">${readReceipt}</span>` : ''}
-          <span class="message-like">
-            <button class="like-btn ${isLiked ? 'liked' : ''}">❤️</button>
-            <span class="like-count">${likeCount}</span>
-          </span>
+          ${likeSection}
         </div>
       </div>
       <div class="message-actions">
@@ -144,6 +162,13 @@ function bindMessageEvents(el, id) {
     el.classList.toggle('show-actions');
   });
 
+  // Double‑click (double‑tap) to like the message
+  el.addEventListener('dblclick', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleLike(id);
+  });
+
   // Inline like button
   el.querySelector('.message-like .like-btn')?.addEventListener('click', e => {
     e.stopPropagation();
@@ -185,7 +210,7 @@ function bindMessageEvents(el, id) {
   }
 }
 
-// ---------- Main reconciliation – update DOM to match active messages ----------
+// ---------- Main reconciliation – update DOM to match active messages (with date separators) ----------
 function syncMessages(forceScroll = false) {
   const container = document.getElementById('messagesContainer');
   if (!container) return;
@@ -209,6 +234,9 @@ function syncMessages(forceScroll = false) {
   const emptyEl = container.querySelector('.empty-state');
   if (emptyEl) emptyEl.remove();
 
+  // Remove all existing date separators (we'll recreate them)
+  container.querySelectorAll('.date-separator').forEach(el => el.remove());
+
   // Remove any DOM elements whose message was deleted
   for (const [id, el] of messageElements) {
     if (!activeIds.includes(id)) {
@@ -217,30 +245,59 @@ function syncMessages(forceScroll = false) {
     }
   }
 
-  // Insert / update messages in the correct order
+  let lastDateLabel = null;
   let previousEl = null;
+
   for (const id of activeIds) {
+    const msg = messagesMap.get(id);
+    if (!msg) continue;
+
+    // ---- Date separator ----
+    const currentLabel = getDateLabel(msg.timestamp);
+    if (currentLabel !== lastDateLabel) {
+      const sep = document.createElement('div');
+      sep.className = 'date-separator';
+      sep.innerHTML = `<span>${currentLabel}</span>`;
+
+      if (previousEl) {
+        previousEl.insertAdjacentElement('afterend', sep);
+      } else {
+        container.insertBefore(sep, container.firstChild);
+      }
+      previousEl = sep;
+      lastDateLabel = currentLabel;
+    }
+
+    // ---- Message element ----
     let el = messageElements.get(id);
+
+    // If the like state changed (0 ⇄ >0), rebuild the whole element
+    if (el) {
+      const hasHeart = !!el.querySelector('.message-like');
+      const shouldHaveHeart = msg.likes && msg.likes.length > 0;
+      if (hasHeart !== shouldHaveHeart) {
+        el.remove();
+        messageElements.delete(id);
+        el = null;
+      }
+    }
+
     if (!el) {
-      // Create new element
-      const msg = messagesMap.get(id);
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = buildMessageHTML(msg);
       el = tempDiv.firstElementChild;
       bindMessageEvents(el, id);
       messageElements.set(id, el);
     } else {
-      // Update existing element
-      updateMessageElement(el, messagesMap.get(id));
+      updateMessageElement(el, msg);
     }
 
-    // Place element at correct DOM position
+    // Place message element at correct DOM position
     if (previousEl) {
       if (previousEl.nextSibling !== el) {
         container.insertBefore(el, previousEl.nextSibling);
       }
     } else {
-      // First message
       if (container.firstChild !== el) {
         container.insertBefore(el, container.firstChild);
       }
@@ -248,7 +305,7 @@ function syncMessages(forceScroll = false) {
     previousEl = el;
   }
 
-  // ---- Scroll behaviour (like WhatsApp) ----
+  // ---- Scroll behaviour ----
   const threshold = 50;
   isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
 
@@ -276,7 +333,7 @@ function updateNewMessagesButton() {
   }
 }
 
-// ---------- Optimistic send ----------
+// ---------- Optimistic send (with detailed error) ----------
 async function sendMessage(text, replyTo) {
   const tempId = tempMsgCounter--;
   const tempMsg = {
@@ -291,7 +348,7 @@ async function sendMessage(text, replyTo) {
     readBy: []
   };
   messagesMap.set(tempId, tempMsg);
-  syncMessages(true);   // scroll to bottom
+  syncMessages(true);
 
   try {
     const res = await fetch('/messages', {
@@ -299,19 +356,21 @@ async function sendMessage(text, replyTo) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, replyTo })
     });
-    if (!res.ok) throw new Error('Send failed');
     const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || 'Could not send message');
+    }
     messagesMap.delete(tempId);
     messagesMap.set(data.message.id, data.message);
     syncMessages(true);
-  } catch {
+  } catch (err) {
     messagesMap.delete(tempId);
     syncMessages(true);
-    alert('Failed to send message.');
+    alert(`Failed to send message:\n${err.message}`);
   }
 }
 
-// ---------- Optimistic like ----------
+// ---------- Optimistic like (with detailed error) ----------
 async function toggleLike(id) {
   const msg = messagesMap.get(id);
   if (!msg) return;
@@ -320,20 +379,21 @@ async function toggleLike(id) {
   if (idx === -1) msg.likes.push(currentUser.id);
   else msg.likes.splice(idx, 1);
   msg.likesUpdatedAt = new Date().toISOString();
-  syncMessages();   // instant UI update
+  syncMessages();
 
   try {
     const res = await fetch(`/messages/${id}/like`, { method: 'POST' });
-    if (!res.ok) throw new Error('Like failed');
-  } catch {
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Like failed');
+  } catch (err) {
     msg.likes = originalLikes;
     msg.likesUpdatedAt = null;
     syncMessages();
-    alert('Failed to like.');
+    alert(`Failed to like:\n${err.message}`);
   }
 }
 
-// ---------- Optimistic delete ----------
+// ---------- Optimistic delete (with detailed error) ----------
 async function deleteMessage(id) {
   if (!confirm('Delete this message?')) return;
   const msg = messagesMap.get(id);
@@ -342,21 +402,22 @@ async function deleteMessage(id) {
   msg.deleted = true;
   msg.edited = true;
   msg.editedAt = new Date().toISOString();
-  syncMessages();   // will remove from display
+  syncMessages();
 
   try {
     const res = await fetch(`/messages/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Delete failed');
-  } catch {
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Delete failed');
+  } catch (err) {
     msg.deleted = wasDeleted;
     msg.edited = false;
     msg.editedAt = null;
     syncMessages();
-    alert('Failed to delete.');
+    alert(`Failed to delete:\n${err.message}`);
   }
 }
 
-// ---------- Optimistic edit ----------
+// ---------- Optimistic edit (with detailed error) ----------
 async function editMessage(id, newText) {
   const msg = messagesMap.get(id);
   if (!msg) return;
@@ -373,13 +434,14 @@ async function editMessage(id, newText) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: newText })
     });
-    if (!res.ok) throw new Error('Edit failed');
-  } catch {
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Edit failed');
+  } catch (err) {
     msg.text = originalText;
     msg.edited = originalEdited;
     msg.editedAt = null;
     syncMessages();
-    alert('Failed to edit.');
+    alert(`Failed to edit:\n${err.message}`);
   }
 }
 
@@ -403,7 +465,6 @@ function enterEditMode(id) {
   const msg = messagesMap.get(id);
   if (!msg || msg.senderId !== currentUser.id || msg.deleted) return;
 
-  // Cancel any previous edit mode
   if (editingMessageId !== null) editingMessageId = null;
 
   const el = messageElements.get(id);
@@ -411,7 +472,7 @@ function enterEditMode(id) {
   const textDiv = el.querySelector('.message-text');
   if (!textDiv) return;
 
-  editingMessageId = id;   // protect this message from polling text updates
+  editingMessageId = id;
 
   textDiv.innerHTML = `
     <div class="edit-container">
@@ -422,7 +483,6 @@ function enterEditMode(id) {
       </div>
     </div>`;
 
-  // Stop clicks inside edit box from toggling action buttons
   document.getElementById('editInput').addEventListener('click', e => e.stopPropagation());
   document.querySelector('.edit-container').addEventListener('click', e => e.stopPropagation());
 
@@ -430,7 +490,7 @@ function enterEditMode(id) {
     const newText = document.getElementById('editInput').value.trim();
     editingMessageId = null;
     if (newText) await editMessage(id, newText);
-    else syncMessages();   // revert to normal view
+    else syncMessages();
   };
 
   document.getElementById('cancelEdit').onclick = () => {
@@ -455,7 +515,6 @@ async function poll() {
     let trulyNewCount = 0;
     const messagesForNotification = [];
 
-    // Incorporate new messages
     newMessages.forEach(m => {
       const existing = messagesMap.get(m.id);
       if (!existing ||
@@ -463,7 +522,6 @@ async function poll() {
           new Date(m.likesUpdatedAt || 0) > new Date(existing.likesUpdatedAt || 0)) {
         if (!existing) {
           trulyNewCount++;
-          // Notification only for messages from the other user
           if (m.senderId !== currentUser.id) {
             messagesForNotification.push(m);
           }
@@ -471,7 +529,6 @@ async function poll() {
         messagesMap.set(m.id, m);
       }
     });
-    // Incorporate edited messages (likes, etc.)
     editedMessages.forEach(m => {
       const existing = messagesMap.get(m.id);
       if (!existing ||
@@ -481,7 +538,6 @@ async function poll() {
       }
     });
 
-    // Show browser notification only when the tab is hidden
     if (messagesForNotification.length > 0 &&
         document.visibilityState === 'hidden' &&
         Notification.permission === 'granted') {
@@ -499,15 +555,12 @@ async function poll() {
       };
     }
 
-    // Update unread count if user isn't at the bottom
     if (trulyNewCount > 0 && !wasAtBottom) {
       unreadCount += trulyNewCount;
     }
 
-    // Reconcile the DOM (without auto‑scroll yet)
     syncMessages(false);
 
-    // Auto‑scroll if user was at the bottom
     if (wasAtBottom) {
       const container = document.getElementById('messagesContainer');
       if (container) container.scrollTop = container.scrollHeight;
@@ -515,7 +568,6 @@ async function poll() {
       updateNewMessagesButton();
     }
 
-    // Typing indicator (rasuv only)
     if (currentUser.id === 1 && data.manuStatus) {
       const typingDiv = document.getElementById('typingIndicator');
       const typingText = document.getElementById('typingText');
@@ -608,7 +660,7 @@ async function loadInitial() {
     if (!res.ok) throw new Error('Could not load messages');
     const messages = await res.json();
     messages.forEach(m => messagesMap.set(m.id, m));
-    syncMessages(true);   // scroll to bottom initially
+    syncMessages(true);
     const sorted = messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     lastSync = sorted.length > 0 ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
   } catch (err) {
@@ -617,15 +669,17 @@ async function loadInitial() {
   }
 }
 
-// ---------- Clear chat (rasuv only) ----------
+// ---------- Clear chat (rasuv only, with error) ----------
 document.getElementById('clearChatBtn')?.addEventListener('click', async () => {
   if (!confirm('Delete all messages for both users?')) return;
-  const res = await fetch('/messages/all', { method: 'DELETE' });
-  if (res.ok) {
+  try {
+    const res = await fetch('/messages/all', { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Clear failed');
     messagesMap.clear();
     syncMessages(true);
-  } else {
-    alert('Failed to clear chat.');
+  } catch (err) {
+    alert(`Failed to clear chat:\n${err.message}`);
   }
 });
 
@@ -639,7 +693,7 @@ document.getElementById('newMessagesBtn')?.addEventListener('click', () => {
   }
 });
 
-// ---------- Manual refresh button ----------
+// ---------- Manual refresh button (with error) ----------
 async function refreshChat() {
   const btn = document.getElementById('refreshChatBtn');
   if (btn) {
@@ -647,7 +701,6 @@ async function refreshChat() {
     btn.disabled = true;
   }
 
-  // Reset all state
   messagesMap.clear();
   messageElements.clear();
   lastSync = null;
@@ -660,15 +713,15 @@ async function refreshChat() {
 
   try {
     const res = await fetch('/api/messages');
-    if (!res.ok) throw new Error('Refresh failed');
+    if (!res.ok) throw new Error('Server error while refreshing');
     const messages = await res.json();
     messages.forEach(m => messagesMap.set(m.id, m));
     syncMessages(true);
     const sorted = messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     lastSync = sorted.length > 0 ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
   } catch (err) {
-    console.error('Refresh error:', err);
-    alert('Failed to refresh chat. Please try again.');
+    console.error(err);
+    alert(`Failed to refresh chat:\n${err.message}`);
   } finally {
     if (btn) {
       btn.innerHTML = '<span>🔄</span> Refresh';
@@ -690,8 +743,6 @@ document.getElementById('messageForm').addEventListener('submit', e => {
 });
 
 document.getElementById('cancelReply')?.addEventListener('click', cancelReply);
-
-// Emoji button placeholder
 document.getElementById('emojiBtn')?.addEventListener('click', () => {
   alert('Emoji picker coming soon!');
 });
