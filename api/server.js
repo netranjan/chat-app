@@ -31,17 +31,7 @@ async function initialize() {
   configureExpress(app);
   app.use(sessionMiddleware);
 
-  // Touch activity on every authenticated request
-  app.use(async (req, res, next) => {
-    if (req.session && req.session.user && req.session.user.id) {
-      try {
-        await touchActivity(req.session.user.id);
-      } catch (err) {
-        console.error('touchActivity error:', err.message);
-      }
-    }
-    next();
-  });
+  // Touch activity on every authenticated reques
 
   app.use('/', pagesRoutes);
   app.use('/', apiRoutes);
