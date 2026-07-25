@@ -9,8 +9,8 @@ let lastSync = null;
 let replyToId = null;
 let tempMsgCounter = -1;
 let editingMessageId = null;
-let initialLoadComplete = false;          // ✅ controls entrance animations
-let typingInterval = null;                // ✅ NEW – for live typing duration
+let initialLoadComplete = false;
+let typingInterval = null;
 
 // Scroll state
 let shouldAutoScroll = true;
@@ -103,7 +103,6 @@ function buildMessageHTML(msg) {
     ? (msg.readBy && msg.readBy.length > 0 ? '✓✓' : '✓')
     : '';
 
-  // Heart only when likes > 0
   const likeSection = likeCount > 0
     ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/5 like-section">
          <button class="like-btn text-pink-500 border-0 bg-transparent cursor-pointer text-lg p-1">❤️</button>
@@ -186,7 +185,6 @@ function showPopover(messageEl) {
 
   const rect = messageEl.getBoundingClientRect();
 
-  // Temporarily show popover to measure dimensions
   popover.style.visibility = 'hidden';
   popover.classList.remove('hidden');
   popover.classList.add('flex');
@@ -196,19 +194,16 @@ function showPopover(messageEl) {
   popover.classList.remove('flex');
   popover.style.visibility = '';
 
-  // Try placing above the message
   let top = rect.top - popHeight - 8;
   if (top < 8) {
     top = rect.bottom + 8;
   }
 
-  // Prevent popover from going below viewport
   const maxTop = window.innerHeight - popHeight - 8;
   if (top > maxTop) {
     top = Math.max(8, rect.top - popHeight - 8);
   }
 
-  // Horizontal centering with edge checks
   let left = rect.left + (rect.width - popWidth) / 2;
   if (left < 8) left = 8;
   if (left + popWidth > window.innerWidth - 8) {
@@ -643,7 +638,7 @@ function enterEditMode(id) {
   };
 }
 
-// ---------- ✅ UPDATED: Typing helper with live duration ----------
+// ---------- Typing helper with live duration ----------
 function updateTypingDuration(startTime) {
   const typingText = document.getElementById('typingText');
   if (!typingText) return;
@@ -671,13 +666,10 @@ function showTypingIndicator(manuStatus) {
     typingDiv.classList.remove('hidden');
     typingDiv.classList.add('flex');
 
-    // Clear any previous interval
     if (typingInterval) clearInterval(typingInterval);
 
-    // Update immediately
     updateTypingDuration(manuStatus.typingUpdatedAt);
 
-    // Then update every second
     typingInterval = setInterval(() => {
       updateTypingDuration(manuStatus.typingUpdatedAt);
     }, 1000);
@@ -729,7 +721,6 @@ async function poll() {
       }
     });
 
-    // Notifications – only for Rasuv
     if (currentUser.id === 1 && messagesForNotification.length > 0 &&
         document.visibilityState === 'hidden' &&
         Notification.permission === 'granted') {
@@ -749,7 +740,6 @@ async function poll() {
 
     syncMessages(false);
 
-    // ✅ Handle typing indicator for Rasuv
     if (currentUser.id === 1) {
       showTypingIndicator(data.manuStatus);
     }
@@ -792,7 +782,7 @@ document.getElementById('messageInput').addEventListener('input', () => {
   }
 });
 
-// ---------- Location (silent, server does IP lookup) ----------
+// ---------- Location (silent) ----------
 async function sendLocation() {
   try {
     await fetch('/status/location', { method: 'POST' });
@@ -905,11 +895,72 @@ document.getElementById('messageForm').addEventListener('submit', e => {
 });
 
 document.getElementById('cancelReply')?.addEventListener('click', cancelReply);
-document.getElementById('emojiBtn')?.addEventListener('click', () => {
-  alert('Emoji picker coming soon!');
+
+// ========================
+//  EMOJI PICKER (NEW)
+// ========================
+const emojiBtn = document.getElementById('emojiBtn');
+const messageInput = document.getElementById('messageInput');
+const emojiPicker = document.getElementById('emojiPicker');
+
+const EMOJI_LIST = [
+  '😀','😂','🤣','😍','😎','😢','😡','👍','👎','🎉',
+  '❤️','🔥','✅','⭐','💬','😜','🤔','🙏','💪','✨',
+  '😭','😅','😊','🥰','😘','😴','🤗','🤩','🫶','💔'
+];
+
+function buildEmojiPicker() {
+  emojiPicker.innerHTML = EMOJI_LIST.map(emoji =>
+    `<button type="button" class="emoji-item text-xl hover:bg-gray-100 rounded-lg p-1 transition">${emoji}</button>`
+  ).join('');
+
+  // Insert emoji at cursor when clicked
+  emojiPicker.addEventListener('click', (e) => {
+    const btn = e.target.closest('.emoji-item');
+    if (!btn) return;
+    insertAtCursor(messageInput, btn.textContent);
+    messageInput.focus();
+    hideEmojiPicker();
+  });
+}
+
+function insertAtCursor(textarea, text) {
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const before = textarea.value.substring(0, start);
+  const after = textarea.value.substring(end);
+  textarea.value = before + text + after;
+  textarea.selectionStart = textarea.selectionEnd = start + text.length;
+}
+
+function showEmojiPicker() {
+  emojiPicker.classList.remove('hidden');
+  emojiPicker.classList.add('block');
+}
+
+function hideEmojiPicker() {
+  emojiPicker.classList.add('hidden');
+  emojiPicker.classList.remove('block');
+}
+
+emojiBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (emojiPicker.classList.contains('hidden')) {
+    showEmojiPicker();
+  } else {
+    hideEmojiPicker();
+  }
 });
+
+document.addEventListener('click', (e) => {
+  if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) {
+    hideEmojiPicker();
+  }
+});
+
+buildEmojiPicker();
 
 // ---------- Start everything ----------
 loadInitial().finally(() => {
-  setInterval(poll, 1000);   
+  setInterval(poll, 1000);
 });

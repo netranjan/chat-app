@@ -24,7 +24,6 @@ function timeAgo(date) {
   if (diffHr < 24) return `${diffHr}h ago`;
   const diffDay = Math.floor(diffHr / 24);
   if (diffDay < 7) return `${diffDay}d ago`;
-  // fallback to absolute date (no time needed here)
   return then.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
@@ -57,7 +56,6 @@ async function fetchDashboard() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    // Support both array and { users: [...] } response shapes
     const users = Array.isArray(data) ? data : (data.users || []);
 
     let html = '';
@@ -65,12 +63,11 @@ async function fetchDashboard() {
       const onlineClass = u.isOnline ? 'online' : 'offline';
       const statusText = u.isOnline ? 'Online' : 'Offline';
 
-      // Determine what to show for “last seen”
       let lastSeenDisplay;
       if (u.isOnline) {
         lastSeenDisplay = 'Online now';
       } else if (u.lastSeen) {
-        lastSeenDisplay = timeAgo(u.lastSeen);   // relative time
+        lastSeenDisplay = timeAgo(u.lastSeen);
       } else {
         lastSeenDisplay = '—';
       }
@@ -83,14 +80,28 @@ async function fetchDashboard() {
         <p class="text-sm text-gray-600 mb-1">Last seen: ${lastSeenDisplay}</p>`;
 
       if (u.isTyping) {
-        // Force 12‑hour clock with AM/PM
         const since = u.typingUpdatedAt
           ? new Date(u.typingUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
           : 'unknown';
         html += `<p class="text-pink-600 font-medium text-sm">Typing since: ${since}</p>`;
       }
 
-      // Exact timestamp (only when offline) – also 12‑hour
+      // 🆕 Location section (if available)
+      if (u.currentLocation && u.currentLocation.city) {
+        const loc = u.currentLocation;
+        const mapLink = (loc.lat && loc.lng)
+          ? `https://www.google.com/maps?q=${loc.lat},${loc.lng}`
+          : null;
+
+        html += `
+          <div class="mt-2 p-2 bg-gray-50 rounded-lg text-sm space-y-1">
+            <p><i class="fas fa-map-marker-alt text-pink-500 w-4 inline-block"></i> ${loc.city}${loc.district ? ', ' + loc.district : ''}, ${loc.state}, ${loc.country}</p>
+            ${loc.isp ? `<p class="text-xs text-gray-500"><i class="fas fa-network-wired w-4 inline-block"></i> ${loc.isp}</p>` : ''}
+            ${mapLink ? `<p><a href="${mapLink}" target="_blank" class="text-pink-500 hover:underline text-xs"><i class="fas fa-external-link-alt w-4 inline-block"></i> View on map</a></p>` : ''}
+            ${loc.updatedAt ? `<p class="text-xs text-gray-400">Updated: ${new Date(loc.updatedAt).toLocaleString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>` : ''}
+          </div>`;
+      }
+
       if (u.lastSeen && !u.isOnline) {
         const fullTime = new Date(u.lastSeen).toLocaleString([], {
           month: 'short',
@@ -110,7 +121,6 @@ async function fetchDashboard() {
       html = '<p class="text-gray-500 text-center py-8">No users found.</p>';
     }
 
-    // Footer with current time in 12‑hour format
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
     html += `<p class="text-xs text-gray-300 text-center mt-2">Updated ${now}</p>`;
 

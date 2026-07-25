@@ -15,9 +15,8 @@ function getUserId(req) {
 }
 
 function getClientIp(req) {
-  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-         req.socket.remoteAddress ||
-         req.ip;
+  // trust proxy is set – req.ip now contains the real client IP
+  return req.ip.replace(/^::ffff:/, '');
 }
 
 function fetchLocationByIp(ip) {

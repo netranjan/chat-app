@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Campusfify Chat</title>
 
   <!-- Google Fonts – only Inter (clean, readable) -->
@@ -31,10 +31,12 @@
     }
   </script>
 </head>
-<body class="font-sans bg-[#f5f7fb] text-[#1a1a2e] h-full max-h-screen flex flex-col overflow-hidden">
+<!-- Use dynamic viewport height and flex column to lock layout -->
+<body class="font-sans bg-[#f5f7fb] text-[#1a1a2e] flex flex-col overflow-hidden"
+      style="height: calc(var(--vh, 1dvh) * 100); max-height: calc(var(--vh, 1dvh) * 100);">
 
-  <!-- HEADER -->
-  <header class="bg-white/90 backdrop-blur-md flex items-center justify-between px-4 py-2 gap-2 border-b border-black/5 min-h-[60px] z-10 flex-nowrap">
+  <!-- HEADER (flex-shrink-0 prevents it from being squashed) -->
+  <header class="flex-shrink-0 bg-white/90 backdrop-blur-md flex items-center justify-between px-4 py-2 gap-2 border-b border-black/5 min-h-[60px] z-10 flex-nowrap">
     <div class="flex items-center gap-3 flex-1 min-w-0">
       <a href="/" class="text-gray-500 hover:text-gray-900 p-2 rounded-full transition text-xl">
         <i class="fas fa-arrow-left"></i>
@@ -68,27 +70,25 @@
     </div>
   </header>
 
-  <!-- MESSAGES CONTAINER (relative for popover positioning) -->
+  <!-- MESSAGES CONTAINER (scrollable area) -->
   <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 pb-2 bg-[#f0f2f8] flex flex-col gap-[1px] relative">
 
-    <!-- ACTION POPOVER (hidden, positioned by JS) – moved inside container so event delegation works -->
+    <!-- ACTION POPOVER -->
     <div id="actionPopover" class="hidden fixed bg-white rounded-2xl shadow-lg p-2 flex gap-1 z-[1000] border border-gray-100">
       <button class="popover-like-btn px-3 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition">❤️ Like</button>
       <button class="popover-reply-btn px-3 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">↩ Reply</button>
       <button class="popover-edit-btn px-3 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-700 hover:bg-yellow-50 hover:text-yellow-600 transition">✏️ Edit</button>
       <button class="popover-delete-btn px-3 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-600 transition">🗑 Delete</button>
     </div>
-
-    <!-- dynamically filled by JS -->
   </div>
 
-  <!-- NEW MESSAGES FLOATING BUTTON (count only) -->
+  <!-- NEW MESSAGES BUTTON -->
   <button id="newMessagesBtn" class="fixed bottom-24 right-5 bg-green-500 text-white rounded-full px-5 py-2.5 text-sm font-semibold shadow-lg shadow-green-500/20 z-50 hidden items-center gap-2 hover:scale-105 active:scale-95 transition-transform animate-bounceIn">
     ↓ <span id="newMsgCount">0</span>
   </button>
 
-  <!-- TYPING INDICATOR -->
-  <div id="typingIndicator" class="hidden items-center gap-2 px-4 py-1.5 shrink-0">
+  <!-- TYPING INDICATOR (flex-shrink-0) -->
+  <div id="typingIndicator" class="flex-shrink-0 hidden items-center gap-2 px-4 py-1.5">
     <div class="flex gap-1">
       <span class="w-2 h-2 rounded-full bg-pink-500 animate-bounce"></span>
       <span class="w-2 h-2 rounded-full bg-pink-500 animate-bounce [animation-delay:0.2s]"></span>
@@ -97,17 +97,22 @@
     <span id="typingText" class="text-sm text-gray-500">manu is typing…</span>
   </div>
 
-  <!-- REPLY PREVIEW -->
-  <div id="replyPreview" class="hidden items-center gap-3 px-4 py-2 bg-white/80 backdrop-blur border-t border-black/5 shrink-0">
+  <!-- REPLY PREVIEW (flex-shrink-0) -->
+  <div id="replyPreview" class="flex-shrink-0 hidden items-center gap-3 px-4 py-2 bg-white/80 backdrop-blur border-t border-black/5">
     <div id="replyText" class="flex-1 text-sm text-gray-500 py-1.5 px-3 bg-gray-50 rounded-xl border-l-2 border-pink-500 truncate"></div>
     <button id="cancelReply" class="text-gray-500 hover:text-red-500 p-1 rounded-full transition hover:rotate-90 text-xl">×</button>
   </div>
 
-  <!-- INPUT AREA -->
-  <form id="messageForm" class="flex gap-2 px-4 py-2.5 pb-3.5 bg-white border-t border-black/5 shrink-0 items-center">
+  <!-- INPUT AREA (relative for emoji picker, flex-shrink-0, safe-area padding) -->
+  <form id="messageForm" class="flex-shrink-0 relative flex gap-2 px-4 py-2.5 bg-white border-t border-black/5 items-center"
+        style="padding-bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px));">
     <div class="flex-1 flex items-center bg-gray-100 rounded-full pl-3 pr-1 border border-transparent focus-within:bg-white focus-within:border-pink-500 focus-within:shadow-[0_0_0_3px_rgba(233,30,99,0.06)] transition">
       <button type="button" id="emojiBtn" class="text-gray-500 hover:text-pink-500 p-1 transition">😊</button>
       <textarea id="messageInput" placeholder="Type a message..." rows="1" class="flex-1 px-1 py-2 border-0 bg-transparent resize-none text-base leading-relaxed max-h-28 outline-none font-sans"></textarea>
+      <!-- EMOJI PICKER POPUP -->
+      <div id="emojiPicker" class="hidden absolute bottom-full left-0 mb-2 bg-white rounded-2xl shadow-xl border border-gray-200 p-2 grid grid-cols-8 gap-1 z-50 w-64 max-w-[90vw] overflow-y-auto max-h-48">
+        <!-- emoji buttons injected by JS -->
+      </div>
     </div>
     <button type="submit" id="sendBtn" class="px-5 py-2 rounded-full bg-gradient-to-r from-pink-500 to-pink-700 text-white font-semibold shadow-md shadow-pink-500/20 hover:scale-105 active:scale-95 transition disabled:opacity-40 disabled:pointer-events-none">Send</button>
   </form>
@@ -116,21 +121,22 @@
   <% if (user.id === 1) { %>
     <div id="dashboardModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden justify-center items-center z-[10000]" onclick="if(event.target===this) this.classList.add('hidden')">
       <div class="bg-white rounded-3xl p-8 w-[90%] max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl relative animate-dashSlideIn">
-        <span id="closeDashboard" class="absolute top-4 right-5 text-5xl text-gray-400 hover:text-pink-500  transition cursor-pointer">&times;</span>
+        <span id="closeDashboard" class="absolute top-4 right-5 text-5xl text-gray-400 hover:text-pink-500 transition cursor-pointer">&times;</span>
         <h2 class="text-2xl font-semibold mb-6">Admin Dashboard</h2>
         <div id="dashboardData">Loading...</div>
       </div>
     </div>
   <% } %>
 
-  <!-- Viewport height fix for mobile -->
+  <!-- Dynamic viewport height script (replaces old onresize hack) -->
   <script>
-    function setViewportHeight() {
-      document.body.style.height = window.innerHeight + 'px';
+    function setMobileHeight() {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
     }
-    window.addEventListener('resize', setViewportHeight);
-    window.addEventListener('orientationchange', setViewportHeight);
-    setViewportHeight();
+    window.addEventListener('resize', setMobileHeight);
+    window.addEventListener('orientationchange', setMobileHeight);
+    setMobileHeight();
   </script>
 
   <script>
