@@ -1,4 +1,3 @@
-// statusController.js
 const {
   setTyping,
   setOnline,

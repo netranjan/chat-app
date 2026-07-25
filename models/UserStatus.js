@@ -38,7 +38,7 @@ const userStatusSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Auto‑seed users 1 (rasuv) and 2 (manu) on first run
+// Seed both users – called from server.js AFTER DB connection
 userStatusSchema.statics.seed = async function () {
   const UserStatus = this;
   const existing1 = await UserStatus.findOne({ userId: 1 });
@@ -48,10 +48,4 @@ userStatusSchema.statics.seed = async function () {
 };
 
 const UserStatus = mongoose.model('UserStatus', userStatusSchema);
-
-// Run seeding when the model is first loaded
-UserStatus.seed().catch(err => {
-  console.error('UserStatus seeding failed:', err.message);
-});
-
 module.exports = UserStatus;

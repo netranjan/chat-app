@@ -17,7 +17,7 @@ async function touchActivity(userId) {
     { userId },
     {
       lastHeartbeat: now,
-      lastOnlineTime: now,   // update last online timestamp
+      lastOnlineTime: now,
       isOnline: true
     },
     { upsert: true, new: true }
@@ -27,13 +27,12 @@ async function touchActivity(userId) {
 // ─── Online (explicit setOnline, used by statusController) ──
 async function setOnline(userId, isOnline) {
   if (isOnline) {
-    return touchActivity(userId);   // same as heartbeat
+    return touchActivity(userId);
   } else {
-    // Mark offline immediately, but keep lastOnlineTime intact
     await UserStatus.findOneAndUpdate(
       { userId },
       {
-        lastHeartbeat: new Date(0),   // ancient date → offline
+        lastHeartbeat: new Date(0),   // ancient → offline
         isOnline: false
         // DO NOT update lastOnlineTime
       },
@@ -50,7 +49,6 @@ async function isUserOnline(userId) {
 
 // ─── Typing ─────────────────────────────────────────
 async function setTyping(userId, isTyping) {
-  // Clear any existing in‑memory timer
   if (typingTimers.has(userId)) {
     clearTimeout(typingTimers.get(userId));
     typingTimers.delete(userId);
@@ -64,7 +62,6 @@ async function setTyping(userId, isTyping) {
       { upsert: true }
     );
 
-    // Auto‑clear after TYPING_EXPIRE_MS
     const timer = setTimeout(async () => {
       try {
         await UserStatus.findOneAndUpdate(
@@ -102,22 +99,15 @@ async function getStatus(userId) {
 
   const now = Date.now();
 
-  // ---- Determine online status ----
   let isOnline = false;
   if (doc.lastHeartbeat && doc.lastHeartbeat.getTime() > 0) {
     const heartbeatAge = now - doc.lastHeartbeat.getTime();
     isOnline = heartbeatAge < ONLINE_TIMEOUT_MS;
   }
-
-  // If DB says online but heartbeat is stale, correct it
   if (doc.isOnline !== isOnline) {
-    await UserStatus.findOneAndUpdate(
-      { userId },
-      { isOnline }
-    );
+    await UserStatus.findOneAndUpdate({ userId }, { isOnline });
   }
 
-  // ---- Determine typing status ----
   let isTyping = false;
   let typingUpdatedAt = null;
   if (doc.isTyping && doc.typingStarted) {
@@ -126,7 +116,6 @@ async function getStatus(userId) {
       isTyping = true;
       typingUpdatedAt = doc.typingStarted.toISOString();
     } else {
-      // Expired – clean up
       await UserStatus.findOneAndUpdate(
         { userId },
         { isTyping: false, typingStarted: null }
@@ -134,13 +123,9 @@ async function getStatus(userId) {
     }
   }
 
-  const lastSeen = doc.lastOnlineTime
-    ? doc.lastOnlineTime.toISOString()
-    : new Date(0).toISOString();
-
   return {
     isOnline,
-    lastSeen,
+    lastSeen: doc.lastOnlineTime ? doc.lastOnlineTime.toISOString() : new Date(0).toISOString(),
     isTyping,
     typingUpdatedAt
   };
@@ -158,17 +143,35 @@ async function setLocation(userId, locationData) {
 async function getAllStatuses() {
   const docs = await UserStatus.find({});
   const result = {};
+
   for (const doc of docs) {
     const status = await getStatus(doc.userId);
-    result[doc.userId] = {
-      ...status,
-      location: doc.currentLocation || null
+    result[doc.userId] = { ...status, location: doc.currentLocation || null };
+  }
+
+  // ═══ FALLBACK: guarantee both users appear ═══
+  if (!result[1]) {
+    result[1] = {
+      isOnline: false,
+      lastSeen: new Date(0).toISOString(),
+      isTyping: false,
+      typingUpdatedAt: null,
+      location: null
     };
   }
+  if (!result[2]) {
+    result[2] = {
+      isOnline: false,
+      lastSeen: new Date(0).toISOString(),
+      isTyping: false,
+      typingUpdatedAt: null,
+      location: null
+    };
+  }
+
   return result;
 }
 
-// ─── Exports (same as before) ───────────────────────
 module.exports = {
   touchActivity,
   setOnline,

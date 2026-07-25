@@ -4,6 +4,7 @@ const { configureExpress } = require('../config/express');
 const { sessionMiddleware } = require('../config/session');
 const { connectDB } = require('../services/database.service');
 const { touchActivity } = require('../services/userStatusStore');
+const UserStatus = require('../models/UserStatus');
 const pagesRoutes = require('../routes/pages');
 const apiRoutes = require('../routes/api');
 
@@ -19,10 +20,18 @@ async function initialize() {
   await connectDB();
   console.log('MongoDB connected.');
 
+  // Seed the two users AFTER connection is established
+  try {
+    await UserStatus.seed();
+    console.log('User statuses seeded.');
+  } catch (err) {
+    console.error('Seeding failed:', err.message);
+  }
+
   configureExpress(app);
   app.use(sessionMiddleware);
 
-  // Touch activity on every authenticated request (fire‑and‑forget, but async)
+  // Touch activity on every authenticated request
   app.use(async (req, res, next) => {
     if (req.session && req.session.user && req.session.user.id) {
       try {
@@ -39,11 +48,10 @@ async function initialize() {
 
   app.use((err, req, res, next) => {
     console.error('Unhandled error:', err.message || err);
-    if (res.headersSent) {
-      return next(err);
-    }
+    if (res.headersSent) return next(err);
     res.status(500).json({ error: 'Internal Server Error' });
   });
+
   return app;
 }
 
