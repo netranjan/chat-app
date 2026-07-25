@@ -7,6 +7,13 @@ const typingMap    = new Map();   // userId → { started: timestamp }
 const typingTimers = new Map();   // userId → auto‑clear timeout
 const locations    = new Map();   // userId → location data
 
+// ═══════════════════════════════════════════════════════
+// SEED both users so they always appear in status calls
+// (prevents "no user found" on dashboard)
+heartbeats.set(1, 0);   // user 1 – never online yet
+heartbeats.set(2, 0);   // user 2 – never online yet
+// ═══════════════════════════════════════════════════════
+
 // ─── Timeouts ───────────────────────────────────────
 const ONLINE_TIMEOUT_MS = 15_000;   // 15s without heartbeat → offline
 const TYPING_EXPIRE_MS  = 5_000;    // auto‑stop typing after 5s
@@ -24,13 +31,15 @@ function setOnline(userId, isOnline) {
   if (isOnline) {
     heartbeats.set(userId, Date.now());
   } else {
-    heartbeats.delete(userId);
+    // Don't delete; keep the entry but mark offline
+    heartbeats.set(userId, 0);
   }
 }
 
 function isUserOnline(userId) {
   const last = heartbeats.get(userId);
-  return last !== undefined && Date.now() - last < ONLINE_TIMEOUT_MS;
+  if (last === undefined || last === 0) return false;
+  return Date.now() - last < ONLINE_TIMEOUT_MS;
 }
 
 // ─── Typing ─────────────────────────────────────────
@@ -62,12 +71,24 @@ function clearTyping(userId) {
 }
 
 // ─── Combined status (used by pollController) ───────
+/**
+ * Returns the full status object for a user.
+ * If the user has never sent a heartbeat, returns a default offline status.
+ */
 function getStatus(userId) {
   const last = heartbeats.get(userId);
-  if (!last) return null;
+  if (last === undefined) {
+    // Should not happen because of seeding, but fallback to offline
+    return {
+      isOnline: false,
+      lastSeen: new Date(0).toISOString(),
+      isTyping: false,
+      typingUpdatedAt: null
+    };
+  }
 
   const now = Date.now();
-  const isOnline = now - last < ONLINE_TIMEOUT_MS;
+  const isOnline = last !== 0 && now - last < ONLINE_TIMEOUT_MS;
 
   let isTyping = false;
   let typingUpdatedAt = null;
@@ -88,7 +109,7 @@ function getStatus(userId) {
 
   return {
     isOnline,
-    lastSeen: new Date(last).toISOString(),
+    lastSeen: last === 0 ? new Date(0).toISOString() : new Date(last).toISOString(),
     isTyping,
     typingUpdatedAt
   };
