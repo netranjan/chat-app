@@ -2,9 +2,6 @@
 const mongoose = require('mongoose');
 const { setTyping, setOnline, setLocation } = require('../services/userStatusStore');
 
-const ONLINE_TIMEOUT_MS = 15_000;
-const TYPING_EXPIRE_MS  = 5_000;
-
 exports.updateTyping = async (req, res) => {
   await setTyping(req.session.user.id, req.body.isTyping);
   res.json({ success: true });
@@ -21,12 +18,24 @@ exports.updateLocation = async (req, res) => {
 };
 
 exports.getAllStatuses = async (req, res) => {
-  if (req.session.user?.id !== 1) return res.status(403).json({ success: false });
+  console.log('🔵 getAllStatuses called – returning guaranteed object');
 
-  // Guaranteed fallback – always present
+  // ALWAYS present – even if the database is empty or throws an error
   const result = {
-    1: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null },
-    2: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null }
+    1: {
+      isOnline: false,
+      lastSeen: new Date(0).toISOString(),
+      isTyping: false,
+      typingUpdatedAt: null,
+      location: null
+    },
+    2: {
+      isOnline: false,
+      lastSeen: new Date(0).toISOString(),
+      isTyping: false,
+      typingUpdatedAt: null,
+      location: null
+    }
   };
 
   try {
@@ -40,15 +49,15 @@ exports.getAllStatuses = async (req, res) => {
 
       let online = false;
       if (doc.lastHeartbeat && doc.lastHeartbeat.getTime() > 0) {
-        online = (now - doc.lastHeartbeat.getTime()) < ONLINE_TIMEOUT_MS;
+        online = (now - doc.lastHeartbeat.getTime()) < 15_000;
       }
 
       let typing = false;
-      let typingUpdatedAt = null;
+      let typingAt = null;
       if (doc.isTyping && doc.typingStarted) {
-        if ((now - doc.typingStarted.getTime()) < TYPING_EXPIRE_MS) {
+        if ((now - doc.typingStarted.getTime()) < 5_000) {
           typing = true;
-          typingUpdatedAt = doc.typingStarted.toISOString();
+          typingAt = doc.typingStarted.toISOString();
         }
       }
 
@@ -56,13 +65,14 @@ exports.getAllStatuses = async (req, res) => {
         isOnline: online,
         lastSeen: doc.lastOnlineTime ? doc.lastOnlineTime.toISOString() : new Date(0).toISOString(),
         isTyping: typing,
-        typingUpdatedAt,
+        typingUpdatedAt: typingAt,
         location: doc.currentLocation || null
       };
     }
   } catch (err) {
-    console.error('getAllStatuses error:', err);
+    console.error('❌ getAllStatuses DB error:', err);
   }
 
+  console.log('📤 Sending result:', JSON.stringify(result));
   res.json(result);
 };
