@@ -99,46 +99,6 @@ async function setLocation(userId, locationData) {
 }
 
 // ─── getAllStatuses – always returns both users ─────
-async function getAllStatuses() {
-  const docs = await col().find({}).toArray();
-  const now = Date.now();
-  const result = {};
-
-  for (const doc of docs) {
-    const userId = doc.userId;
-    let isOnline = false;
-    if (doc.lastHeartbeat && doc.lastHeartbeat.getTime() > 0) {
-      isOnline = (now - doc.lastHeartbeat.getTime()) < ONLINE_TIMEOUT_MS;
-    }
-
-    let isTyping = false;
-    let typingUpdatedAt = null;
-    if (doc.isTyping && doc.typingStarted) {
-      if ((now - doc.typingStarted.getTime()) < TYPING_EXPIRE_MS) {
-        isTyping = true;
-        typingUpdatedAt = doc.typingStarted.toISOString();
-      }
-    }
-
-    result[userId] = {
-      isOnline,
-      lastSeen: doc.lastOnlineTime ? doc.lastOnlineTime.toISOString() : new Date(0).toISOString(),
-      isTyping,
-      typingUpdatedAt,
-      location: doc.currentLocation || null
-    };
-  }
-
-  // Guarantee fallback – dashboard never shows "No users found."
-  if (!result[1]) {
-    result[1] = { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null };
-  }
-  if (!result[2]) {
-    result[2] = { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null };
-  }
-
-  return result;
-}
 
 module.exports = {
   touchActivity,
