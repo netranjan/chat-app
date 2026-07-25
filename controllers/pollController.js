@@ -1,13 +1,12 @@
 // controllers/pollController.js
 const { getChanges } = require('../services/message.service');
-const { getStatus } = require('../services/userStatusStore');   // ← changed
+const { getStatus } = require('../services/userStatusStore');
 
 exports.poll = async (req, res) => {
   try {
     const lastSync = req.query.lastSync;
     const changes = await getChanges(lastSync);
 
-    // Determine the new timestamp (unchanged)
     let newTimestamp = lastSync;
     const allMessages = [...changes.newMessages, ...changes.editedMessages];
     if (allMessages.length > 0) {
@@ -24,10 +23,9 @@ exports.poll = async (req, res) => {
       }
     }
 
-    // ✅ Read Manu's live status from the shared in‑memory store
     let manuStatus = null;
     if (req.session.user?.id === 1) {
-      const status = getStatus(2);   // Manu's user ID
+      const status = getStatus(2);
       if (status) {
         manuStatus = {
           isOnline: status.isOnline,

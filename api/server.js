@@ -3,6 +3,7 @@ const express = require('express');
 const { configureExpress } = require('../config/express');
 const { sessionMiddleware } = require('../config/session');
 const { connectDB } = require('../services/database.service');
+const { touchActivity } = require('../services/userStatusStore');  // ← new import
 const pagesRoutes = require('../routes/pages');
 const apiRoutes = require('../routes/api');
 
@@ -13,7 +14,6 @@ async function initialize() {
 
   app = express();
 
-   // 👇 CRITICAL for Render to detect real client IP
   app.set('trust proxy', 1);
   console.log('Connecting to MongoDB...');
   await connectDB();
@@ -21,6 +21,15 @@ async function initialize() {
 
   configureExpress(app);
   app.use(sessionMiddleware);
+
+  // ======== NEW: touch activity on every authenticated request ========
+  app.use((req, res, next) => {
+    if (req.session && req.session.user && req.session.user.id) {
+      touchActivity(req.session.user.id);
+    }
+    next();
+  });
+  // ===================================================================
 
   app.use('/', pagesRoutes);
   app.use('/', apiRoutes);
@@ -35,7 +44,6 @@ async function initialize() {
   return app;
 }
 
-// ---- Start the server if this file is run directly (local dev or Render) ----
 if (require.main === module) {
   initialize()
     .then((expressApp) => {
@@ -50,7 +58,6 @@ if (require.main === module) {
     });
 }
 
-// ---- Export for Vercel (serverless) ----
 module.exports = async (req, res) => {
   const expressApp = await initialize();
   return expressApp(req, res);
