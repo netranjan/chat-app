@@ -36,29 +36,22 @@ const userStatusSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: null
   }
-}, {
-  timestamps: true
-});
+}, { timestamps: true });
 
-// Seed both users on first run
-userStatusSchema.statics.seedUsers = async function() {
+// Auto‑seed users 1 (rasuv) and 2 (manu) on first run
+userStatusSchema.statics.seed = async function () {
   const UserStatus = this;
   const existing1 = await UserStatus.findOne({ userId: 1 });
   const existing2 = await UserStatus.findOne({ userId: 2 });
-  
-  if (!existing1) {
-    await UserStatus.create({ userId: 1 });
-  }
-  if (!existing2) {
-    await UserStatus.create({ userId: 2 });
-  }
+  if (!existing1) await UserStatus.create({ userId: 1 });
+  if (!existing2) await UserStatus.create({ userId: 2 });
 };
 
 const UserStatus = mongoose.model('UserStatus', userStatusSchema);
 
-// Auto-seed when model is loaded
-UserStatus.seedUsers().catch(err => {
-  console.error('Failed to seed user statuses:', err.message);
+// Run seeding when the model is first loaded
+UserStatus.seed().catch(err => {
+  console.error('UserStatus seeding failed:', err.message);
 });
 
 module.exports = UserStatus;

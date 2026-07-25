@@ -3,7 +3,7 @@ const express = require('express');
 const { configureExpress } = require('../config/express');
 const { sessionMiddleware } = require('../config/session');
 const { connectDB } = require('../services/database.service');
-const { touchActivity } = require('../services/userStatusStore');  // ← new import
+const { touchActivity } = require('../services/userStatusStore');
 const pagesRoutes = require('../routes/pages');
 const apiRoutes = require('../routes/api');
 
@@ -22,14 +22,17 @@ async function initialize() {
   configureExpress(app);
   app.use(sessionMiddleware);
 
-  // ======== NEW: touch activity on every authenticated request ========
-  app.use((req, res, next) => {
+  // Touch activity on every authenticated request (fire‑and‑forget, but async)
+  app.use(async (req, res, next) => {
     if (req.session && req.session.user && req.session.user.id) {
-      touchActivity(req.session.user.id);
+      try {
+        await touchActivity(req.session.user.id);
+      } catch (err) {
+        console.error('touchActivity error:', err.message);
+      }
     }
     next();
   });
-  // ===================================================================
 
   app.use('/', pagesRoutes);
   app.use('/', apiRoutes);
