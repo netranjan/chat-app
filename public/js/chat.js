@@ -748,18 +748,53 @@ async function poll() {
   }
 }
 
-// ---------- Online / offline ----------
-function setOnline(online) {
+// ========== Heartbeat – proper start/stop ==========
+const HEARTBEAT_INTERVAL_MS = 10_000;
+let heartbeatTimer = null;
+
+function sendHeartbeat(online = true) {
   fetch('/status/online', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ isOnline: online })
   }).catch(() => {});
 }
-window.addEventListener('load', () => setOnline(true));
-window.addEventListener('beforeunload', () => setOnline(false));
+
+function startHeartbeat() {
+  if (heartbeatTimer) return;          // already running
+  sendHeartbeat(true);                 // immediate pulse
+  heartbeatTimer = setInterval(() => sendHeartbeat(true), HEARTBEAT_INTERVAL_MS);
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+    sendHeartbeat(false);              // tell server we're offline NOW
+  }
+}
+
+// Start immediately
+startHeartbeat();
+
+// Pause when tab is hidden, resume when visible
 document.addEventListener('visibilitychange', () => {
-  setOnline(!document.hidden);
+  if (document.hidden) {
+    stopHeartbeat();
+  } else {
+    startHeartbeat();
+  }
+});
+
+// When the page is about to unload (close tab / navigate away)
+window.addEventListener('beforeunload', () => {
+  // Use synchronous XMLHttpRequest – works during page unload
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/status/online', false);   // false = synchronous
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(JSON.stringify({ isOnline: false }));
+  } catch (e) { /* ignore */ }
 });
 
 // ---------- Typing indicator (only manu) ----------
