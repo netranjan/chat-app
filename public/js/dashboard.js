@@ -9,7 +9,7 @@ const dashboardData = document.getElementById('dashboardData');
 
 let dashInterval;
 
-// ---------- Helper: format relative time for "last seen" ----------
+// ---------- Helper: format relative time ----------
 function timeAgo(date) {
   if (!date) return 'Unknown';
   const now = new Date();
@@ -27,7 +27,7 @@ function timeAgo(date) {
   return then.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-// ---------- Dashboard UI ----------
+// ---------- UI ----------
 dashBtn.addEventListener('click', () => {
   modal.classList.remove('hidden');
   modal.classList.add('flex');
@@ -49,47 +49,47 @@ modal.addEventListener('click', (e) => {
   }
 });
 
-// ---------- Fetch and render ----------
+// ---------- Fetch & render ----------
 async function fetchDashboard() {
   try {
     const res = await fetch('/status/all');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await res.json();   // object: { "1": {...}, "2": {...} }
 
-    // Data is now an object like { 1: {...}, 2: {...} }
-    // Convert to an array and add a username mapping
-    const users = Object.entries(data).map(([id, status]) => ({
-      id: Number(id),
-      username: Number(id) === 1 ? 'rasuv' : (Number(id) === 2 ? 'manu' : `user ${id}`),
-      ...status
-    }));
+    // Convert object to array with usernames
+    const users = [];
+    for (const [id, status] of Object.entries(data)) {
+      if (status && typeof status === 'object') {
+        users.push({
+          id: Number(id),
+          username: Number(id) === 1 ? 'rasuv' : (Number(id) === 2 ? 'manu' : `user ${id}`),
+          ...status
+        });
+      }
+    }
 
     let html = '';
     users.forEach(u => {
-      const onlineClass = u.isOnline ? 'online' : 'offline';
       const statusText = u.isOnline ? 'Online' : 'Offline';
 
       let lastSeenDisplay;
       if (u.isOnline) {
         lastSeenDisplay = 'Online now';
       } else if (u.lastSeen) {
-        // Ignore the epoch 0 seed value (1970) – treat as never
         const lastDate = new Date(u.lastSeen);
-        if (lastDate.getFullYear() < 2000) {
-          lastSeenDisplay = 'Never';
-        } else {
-          lastSeenDisplay = timeAgo(u.lastSeen);
-        }
+        lastSeenDisplay = lastDate.getFullYear() < 2000 ? 'Never' : timeAgo(u.lastSeen);
       } else {
         lastSeenDisplay = '—';
       }
 
-      html += `<div class="mb-4 p-3 bg-white rounded-xl border border-gray-100">
-        <h3 class="text-lg font-semibold mb-1 text-blue-600 flex items-center gap-2">
-          <span class="inline-block w-2.5 h-2.5 rounded-full ${u.isOnline ? 'bg-green-500' : 'bg-gray-300'}"></span>
-          ${u.username} – ${statusText}
-        </h3>
-        <p class="text-sm text-gray-600 mb-1">Last seen: ${lastSeenDisplay}</p>`;
+      html += `
+        <div class="mb-4 p-3 bg-white rounded-xl border border-gray-100">
+          <h3 class="text-lg font-semibold mb-1 text-blue-600 flex items-center gap-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full ${u.isOnline ? 'bg-green-500' : 'bg-gray-300'}"></span>
+            ${u.username} – ${statusText}
+          </h3>
+          <p class="text-sm text-gray-600 mb-1">Last seen: ${lastSeenDisplay}</p>
+      `;
 
       if (u.isTyping) {
         const since = u.typingUpdatedAt
@@ -98,34 +98,27 @@ async function fetchDashboard() {
         html += `<p class="text-pink-600 font-medium text-sm">Typing since: ${since}</p>`;
       }
 
-      // 🆕 Location section (if available)
       if (u.currentLocation && u.currentLocation.city) {
         const loc = u.currentLocation;
         const mapLink = (loc.lat && loc.lng)
           ? `https://www.google.com/maps?q=${loc.lat},${loc.lng}`
           : null;
-
         html += `
           <div class="mt-2 p-2 bg-gray-50 rounded-lg text-sm space-y-1">
             <p><i class="fas fa-map-marker-alt text-pink-500 w-4 inline-block"></i> ${loc.city}${loc.district ? ', ' + loc.district : ''}, ${loc.state}, ${loc.country}</p>
             ${loc.isp ? `<p class="text-xs text-gray-500"><i class="fas fa-network-wired w-4 inline-block"></i> ${loc.isp}</p>` : ''}
             ${mapLink ? `<p><a href="${mapLink}" target="_blank" class="text-pink-500 hover:underline text-xs"><i class="fas fa-external-link-alt w-4 inline-block"></i> View on map</a></p>` : ''}
             ${loc.updatedAt ? `<p class="text-xs text-gray-400">Updated: ${new Date(loc.updatedAt).toLocaleString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>` : ''}
-          </div>`;
+          </div>
+        `;
       }
 
       if (u.lastSeen && !u.isOnline) {
         const lastDate = new Date(u.lastSeen);
-        if (lastDate.getFullYear() < 2000) {
-          // Never online – skip showing the epoch date
-        } else {
+        if (lastDate.getFullYear() >= 2000) {
           const fullTime = lastDate.toLocaleString([], {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
+            month: 'short', day: 'numeric', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: true
           });
           html += `<p class="text-xs text-gray-400" title="${fullTime}">(${fullTime})</p>`;
         }
