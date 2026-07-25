@@ -56,7 +56,13 @@ async function fetchDashboard() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    const users = Array.isArray(data) ? data : (data.users || []);
+    // Data is now an object like { 1: {...}, 2: {...} }
+    // Convert to an array and add a username mapping
+    const users = Object.entries(data).map(([id, status]) => ({
+      id: Number(id),
+      username: Number(id) === 1 ? 'rasuv' : (Number(id) === 2 ? 'manu' : `user ${id}`),
+      ...status
+    }));
 
     let html = '';
     users.forEach(u => {
@@ -67,7 +73,13 @@ async function fetchDashboard() {
       if (u.isOnline) {
         lastSeenDisplay = 'Online now';
       } else if (u.lastSeen) {
-        lastSeenDisplay = timeAgo(u.lastSeen);
+        // Ignore the epoch 0 seed value (1970) – treat as never
+        const lastDate = new Date(u.lastSeen);
+        if (lastDate.getFullYear() < 2000) {
+          lastSeenDisplay = 'Never';
+        } else {
+          lastSeenDisplay = timeAgo(u.lastSeen);
+        }
       } else {
         lastSeenDisplay = '—';
       }
@@ -103,15 +115,20 @@ async function fetchDashboard() {
       }
 
       if (u.lastSeen && !u.isOnline) {
-        const fullTime = new Date(u.lastSeen).toLocaleString([], {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        });
-        html += `<p class="text-xs text-gray-400" title="${fullTime}">(${fullTime})</p>`;
+        const lastDate = new Date(u.lastSeen);
+        if (lastDate.getFullYear() < 2000) {
+          // Never online – skip showing the epoch date
+        } else {
+          const fullTime = lastDate.toLocaleString([], {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+          html += `<p class="text-xs text-gray-400" title="${fullTime}">(${fullTime})</p>`;
+        }
       }
 
       html += `</div>`;
