@@ -99,6 +99,48 @@ async function setLocation(userId, locationData) {
 }
 
 // ─── getAllStatuses – always returns both users ─────
+async function getAllStatuses() {
+  // Start with guaranteed fallback
+  const result = {
+    1: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null },
+    2: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null }
+  };
+
+  try {
+    const docs = await col().find({}).toArray();
+    const now = Date.now();
+    for (const doc of docs) {
+      const userId = doc.userId;
+      if (!result[userId]) continue;   // only care about 1 and 2
+
+      let isOnline = false;
+      if (doc.lastHeartbeat && doc.lastHeartbeat.getTime() > 0) {
+        isOnline = (now - doc.lastHeartbeat.getTime()) < ONLINE_TIMEOUT_MS;
+      }
+
+      let isTyping = false;
+      let typingUpdatedAt = null;
+      if (doc.isTyping && doc.typingStarted) {
+        if ((now - doc.typingStarted.getTime()) < TYPING_EXPIRE_MS) {
+          isTyping = true;
+          typingUpdatedAt = doc.typingStarted.toISOString();
+        }
+      }
+
+      result[userId] = {
+        isOnline,
+        lastSeen: doc.lastOnlineTime ? doc.lastOnlineTime.toISOString() : new Date(0).toISOString(),
+        isTyping,
+        typingUpdatedAt,
+        location: doc.currentLocation || null
+      };
+    }
+  } catch (err) {
+    console.error('getAllStatuses error:', err);
+  }
+
+  return result;
+}
 
 module.exports = {
   touchActivity,
