@@ -748,24 +748,18 @@ async function poll() {
   }
 }
 
-// ========== Heartbeat – keeps server authoritative ==========
-const HEARTBEAT_INTERVAL_MS = 10_000;   // every 10 seconds
-
-function sendHeartbeat() {
+// ---------- Online / offline ----------
+function setOnline(online) {
   fetch('/status/online', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ isOnline: true })
+    body: JSON.stringify({ isOnline: online })
   }).catch(() => {});
 }
-
-// Send immediately and then every 10s
-sendHeartbeat();
-setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
-
-// When tab becomes visible again, send a heartbeat right away
+window.addEventListener('load', () => setOnline(true));
+window.addEventListener('beforeunload', () => setOnline(false));
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) sendHeartbeat();
+  setOnline(!document.hidden);
 });
 
 // ---------- Typing indicator (only manu) ----------
