@@ -2,12 +2,8 @@
 const express = require('express');
 const router = express.Router();
 const https = require('https');
-const {
-  setTyping,
-  setOnline,
-  setLocation,
-  getAllStatuses
-} = require('../services/userStatusStore');
+const mongoose = require('mongoose');                     // <-- new
+const { setTyping, setOnline, setLocation } = require('../services/userStatusStore');
 
 // ---------- Helpers ----------
 function getUserId(req) {
@@ -15,7 +11,6 @@ function getUserId(req) {
 }
 
 function getClientIp(req) {
-  // trust proxy is set – req.ip now contains the real client IP
   return req.ip.replace(/^::ffff:/, '');
 }
 
@@ -91,19 +86,109 @@ router.post('/location', async (req, res) => {
   res.json({ success: true });
 });
 
-// ----- Get all statuses (for dashboard) -----
-router.get('/all', (req, res) => {
-  res.json(getAllStatuses());
+// ============================================================
+//  🔥 NEW /all endpoint – always returns both users
+// ============================================================
+router.get('/all', async (req, res) => {
+  if (req.session?.user?.id !== 1) return res.status(403).json({ error: 'Forbidden' });
+
+  console.log('🔵 /status/all called');
+
+  // Guaranteed fallback – always returned, even if DB is empty
+  const result = {
+    1: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null },
+    2: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null }
+  };
+
+  try {
+    const col = mongoose.connection.db.collection('userstatuses');
+    const docs = await col.find({}).toArray();
+    const now = Date.now();
+
+    for (const doc of docs) {
+      const userId = doc.userId;
+      if (!result[userId]) continue;
+
+      let online = false;
+      if (doc.lastHeartbeat && doc.lastHeartbeat.getTime() > 0) {
+        online = (now - doc.lastHeartbeat.getTime()) < 15_000;
+      }
+
+      let typing = false;
+      let typingAt = null;
+      if (doc.isTyping && doc.typingStarted) {
+        if ((now - doc.typingStarted.getTime()) < 5_000) {
+          typing = true;
+          typingAt = doc.typingStarted.toISOString();
+        }
+      }
+
+      result[userId] = {
+        isOnline: online,
+        lastSeen: doc.lastOnlineTime ? doc.lastOnlineTime.toISOString() : new Date(0).toISOString(),
+        isTyping: typing,
+        typingUpdatedAt: typingAt,
+        location: doc.currentLocation || null
+      };
+    }
+  } catch (err) {
+    console.error('❌ /status/all error:', err);
+  }
+
+  console.log('📤 Sending:', JSON.stringify(result));
+  res.json(result);
 });
 
-// ----- Legacy dashboard endpoint -----
-router.get('/dashboard', (req, res) => {
-  const statuses = getAllStatuses();
-  const manu = statuses.find(s => s.username === 'manu') || {};
+// ----- Legacy dashboard endpoint (adapted for object) -----
+router.get('/dashboard', async (req, res) => {
+  if (req.session?.user?.id !== 1) return res.status(403).json({ error: 'Forbidden' });
+
+  // reuse the same logic as /all for consistency
+  const result = {
+    1: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null },
+    2: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null }
+  };
+
+  try {
+    const col = mongoose.connection.db.collection('userstatuses');
+    const docs = await col.find({}).toArray();
+    const now = Date.now();
+
+    for (const doc of docs) {
+      const userId = doc.userId;
+      if (!result[userId]) continue;
+
+      let online = false;
+      if (doc.lastHeartbeat && doc.lastHeartbeat.getTime() > 0) {
+        online = (now - doc.lastHeartbeat.getTime()) < 15_000;
+      }
+
+      let typing = false;
+      let typingAt = null;
+      if (doc.isTyping && doc.typingStarted) {
+        if ((now - doc.typingStarted.getTime()) < 5_000) {
+          typing = true;
+          typingAt = doc.typingStarted.toISOString();
+        }
+      }
+
+      result[userId] = {
+        isOnline: online,
+        lastSeen: doc.lastOnlineTime ? doc.lastOnlineTime.toISOString() : new Date(0).toISOString(),
+        isTyping: typing,
+        typingUpdatedAt: typingAt,
+        location: doc.currentLocation || null
+      };
+    }
+  } catch (err) {
+    console.error('❌ /dashboard error:', err);
+  }
+
+  const manu = result[2];   // user 2 is manu
   res.json({
     manuOnline: manu.isOnline,
     manuTyping: manu.isTyping,
-    manuLocation: manu.currentLocation
+    manuLocation: manu.location
   });
 });
 
