@@ -14,13 +14,13 @@ async function initialize() {
   if (app) return app;
 
   app = express();
-
   app.set('trust proxy', 1);
+
   console.log('Connecting to MongoDB...');
   await connectDB();
   console.log('MongoDB connected.');
 
-  // Seed the two users AFTER connection is established
+  // Seed the two users (runs only once)
   try {
     await UserStatus.seed();
     console.log('User statuses seeded.');
@@ -57,13 +57,11 @@ async function initialize() {
 
 if (require.main === module) {
   initialize()
-    .then((expressApp) => {
+    .then(expressApp => {
       const PORT = process.env.PORT || 3000;
-      expressApp.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-      });
+      expressApp.listen(PORT, () => console.log(`Server running on port ${PORT}`));
     })
-    .catch((err) => {
+    .catch(err => {
       console.error('Failed to start server:', err);
       process.exit(1);
     });
