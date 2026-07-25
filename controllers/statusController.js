@@ -1,3 +1,4 @@
+// statusController.js
 const {
   setTyping,
   setOnline,
@@ -7,25 +8,24 @@ const {
 
 exports.updateTyping = async (req, res) => {
   const { isTyping, typingTo } = req.body;
-  // typingTo is ignored here; we only need the current user
-  setTyping(req.session.user.id, isTyping);
+  await setTyping(req.session.user.id, isTyping);
   res.json({ success: true });
 };
 
 exports.updateOnline = async (req, res) => {
   const { isOnline } = req.body;
-  setOnline(req.session.user.id, isOnline);
+  await setOnline(req.session.user.id, isOnline);
   res.json({ success: true });
 };
 
 exports.updateLocation = async (req, res) => {
   const locationData = req.body;
-  setLocation(req.session.user.id, locationData);
+  await setLocation(req.session.user.id, locationData);
   res.json({ success: true });
 };
 
 exports.getAllStatuses = async (req, res) => {
   if (req.session.user.id !== 1) return res.status(403).json({ success: false });
-  const statuses = getAllStatuses();
+  const statuses = await getAllStatuses();
   res.json(statuses);
 };

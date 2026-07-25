@@ -1,84 +1,120 @@
 // services/userStatusStore.js
-// Server‑authoritative online/typing store.
+// MongoDB-backed online/typing store – survives server restarts.
 
-// ─── Maps ───────────────────────────────────────────
-const heartbeats   = new Map();   // userId → last heartbeat timestamp (ms)
-const typingMap    = new Map();   // userId → { started: timestamp }
-const typingTimers = new Map();   // userId → auto‑clear timeout
-const locations    = new Map();   // userId → location data
-
-// ═══════════════════════════════════════════════════════
-// SEED both users so they always appear in status calls
-// (prevents "no user found" on dashboard)
-heartbeats.set(1, 0);   // user 1 – never online yet
-heartbeats.set(2, 0);   // user 2 – never online yet
-// ═══════════════════════════════════════════════════════
+const UserStatus = require('../models/UserStatus');
 
 // ─── Timeouts ───────────────────────────────────────
 const ONLINE_TIMEOUT_MS = 15_000;   // 15s without heartbeat → offline
 const TYPING_EXPIRE_MS  = 5_000;    // auto‑stop typing after 5s
 
+// In-memory typing timers (for auto-expiry)
+const typingTimers = new Map();   // userId → timeoutId
+
 // ─── Core heartbeat ─────────────────────────────────
 /**
  * Called by middleware on every authenticated request.
  */
-function touchActivity(userId) {
-  heartbeats.set(userId, Date.now());
+async function touchActivity(userId) {
+  const now = new Date();
+  await UserStatus.findOneAndUpdate(
+    { userId },
+    { 
+      lastHeartbeat: now,
+      lastOnlineTime: now,
+      isOnline: true
+    },
+    { upsert: true, new: true }
+  );
 }
 
 // ─── Online (explicit setOnline for backward compat) ─
-function setOnline(userId, isOnline) {
+async function setOnline(userId, isOnline) {
+  const now = new Date();
   if (isOnline) {
-    heartbeats.set(userId, Date.now());
+    await UserStatus.findOneAndUpdate(
+      { userId },
+      { 
+        lastHeartbeat: now,
+        lastOnlineTime: now,
+        isOnline: true
+      },
+      { upsert: true, new: true }
+    );
   } else {
-    // Don't delete; keep the entry but mark offline
-    heartbeats.set(userId, 0);
+    // Mark offline but preserve lastOnlineTime
+    await UserStatus.findOneAndUpdate(
+      { userId },
+      { 
+        lastHeartbeat: null,
+        isOnline: false
+        // DO NOT update lastOnlineTime
+      },
+      { upsert: true }
+    );
   }
 }
 
-function isUserOnline(userId) {
-  const last = heartbeats.get(userId);
-  if (last === undefined || last === 0) return false;
-  return Date.now() - last < ONLINE_TIMEOUT_MS;
+async function isUserOnline(userId) {
+  const status = await UserStatus.findOne({ userId });
+  if (!status || !status.lastHeartbeat) return false;
+  return Date.now() - new Date(status.lastHeartbeat).getTime() < ONLINE_TIMEOUT_MS;
 }
 
 // ─── Typing ─────────────────────────────────────────
-/**
- * Expected by statusController: setTyping(userId, true/false)
- */
-function setTyping(userId, isTyping) {
-  // Cancel any existing auto‑clear timer
+async function setTyping(userId, isTyping) {
+  // Clear any existing in-memory timer
   if (typingTimers.has(userId)) {
     clearTimeout(typingTimers.get(userId));
     typingTimers.delete(userId);
   }
 
   if (isTyping) {
-    typingMap.set(userId, { started: Date.now() });
+    const now = new Date();
+    await UserStatus.findOneAndUpdate(
+      { userId },
+      { 
+        isTyping: true,
+        typingStarted: now
+      },
+      { upsert: true, new: true }
+    );
 
-    const timer = setTimeout(() => {
-      typingMap.delete(userId);
+    // Auto-clear typing after expiry
+    const timer = setTimeout(async () => {
+      await UserStatus.findOneAndUpdate(
+        { userId },
+        { 
+          isTyping: false,
+          typingStarted: null
+        }
+      );
       typingTimers.delete(userId);
     }, TYPING_EXPIRE_MS);
     typingTimers.set(userId, timer);
   } else {
-    typingMap.delete(userId);
+    await UserStatus.findOneAndUpdate(
+      { userId },
+      { 
+        isTyping: false,
+        typingStarted: null
+      },
+      { upsert: true }
+    );
   }
 }
 
-function clearTyping(userId) {
-  setTyping(userId, false);
+async function clearTyping(userId) {
+  await setTyping(userId, false);
 }
 
 // ─── Combined status (used by pollController) ───────
 /**
  * Returns the full status object for a user.
- * If the user has never sent a heartbeat, returns a default offline status.
  */
-function getStatus(userId) {
-  const last = heartbeats.get(userId);
-  if (last === undefined) {
-    // Should not happen because of seeding, but fallback to offline
+async function getStatus(userId) {
+  let status = await UserStatus.findOne({ userId });
+  
+  if (!status) {
     return {
       isOnline: false,
       lastSeen: new Date(0).toISOString(),
@@ -88,60 +124,84 @@ function getStatus(userId) {
   }
 
   const now = Date.now();
-  const isOnline = last !== 0 && now - last < ONLINE_TIMEOUT_MS;
+  
+  // Check if heartbeat is stale
+  let isOnline = false;
+  if (status.lastHeartbeat) {
+    const heartbeatAge = now - new Date(status.lastHeartbeat).getTime();
+    isOnline = heartbeatAge < ONLINE_TIMEOUT_MS;
+    
+    // Update DB if status changed
+    if (status.isOnline !== isOnline) {
+      await UserStatus.findOneAndUpdate(
+        { userId },
+        { isOnline }
+      );
+    }
+  }
 
+  // Check if typing has expired
   let isTyping = false;
   let typingUpdatedAt = null;
-  const typingInfo = typingMap.get(userId);
-  if (typingInfo) {
-    if (now - typingInfo.started < TYPING_EXPIRE_MS) {
+  if (status.isTyping && status.typingStarted) {
+    const typingAge = now - new Date(status.typingStarted).getTime();
+    if (typingAge < TYPING_EXPIRE_MS) {
       isTyping = true;
-      typingUpdatedAt = new Date(typingInfo.started).toISOString();
+      typingUpdatedAt = status.typingStarted.toISOString();
     } else {
-      // Expired – clean up
-      typingMap.delete(userId);
-      if (typingTimers.has(userId)) {
-        clearTimeout(typingTimers.get(userId));
-        typingTimers.delete(userId);
-      }
+      // Expired – update DB
+      await UserStatus.findOneAndUpdate(
+        { userId },
+        { 
+          isTyping: false,
+          typingStarted: null
+        }
+      );
     }
   }
 
   return {
     isOnline,
-    lastSeen: last === 0 ? new Date(0).toISOString() : new Date(last).toISOString(),
+    lastSeen: status.lastOnlineTime 
+      ? status.lastOnlineTime.toISOString() 
+      : new Date(0).toISOString(),
     isTyping,
     typingUpdatedAt
   };
 }
 
-// ─── Location (unchanged) ───────────────────────────
-function setLocation(userId, locationData) {
-  locations.set(userId, locationData);
+// ─── Location ───────────────────────────────────────
+async function setLocation(userId, locationData) {
+  await UserStatus.findOneAndUpdate(
+    { userId },
+    { currentLocation: locationData },
+    { upsert: true, new: true }
+  );
 }
 
-function getAllStatuses() {
+async function getAllStatuses() {
+  const statuses = await UserStatus.find({});
   const result = {};
-  for (const [userId] of heartbeats) {
-    result[userId] = {
-      ...getStatus(userId),
-      location: locations.get(userId) || null
+  
+  for (const status of statuses) {
+    const statusObj = await getStatus(status.userId);
+    result[status.userId] = {
+      ...statusObj,
+      location: status.currentLocation || null
     };
   }
+  
   return result;
 }
 
 // ─── Exports ────────────────────────────────────────
 module.exports = {
-  // used by middleware in api/server.js
   touchActivity,
-  // used by statusController
   setOnline,
   setTyping,
   clearTyping,
   setLocation,
   getAllStatuses,
-  // used by pollController
   getStatus,
   isUserOnline
 };

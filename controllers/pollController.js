@@ -25,7 +25,7 @@ exports.poll = async (req, res) => {
 
     let manuStatus = null;
     if (req.session.user?.id === 1) {
-      const status = getStatus(2);
+      const status = await getStatus(2);   // ← await added
       if (status) {
         manuStatus = {
           isOnline: status.isOnline,
