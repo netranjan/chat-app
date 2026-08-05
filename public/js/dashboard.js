@@ -2,12 +2,13 @@
 //  Admin Dashboard – Rasuv only
 // ==========================
 
-const dashBtn = document.getElementById('dashboardToggle');
-const modal = document.getElementById('dashboardModal');
-const closeBtn = document.getElementById('closeDashboard');
-const dashboardData = document.getElementById('dashboardData');
+console.log('Dashboard JS v2 loaded');
 
-let dashInterval;
+const modal = document.getElementById('dashModal');
+const closeBtn = document.getElementById('closeDash');
+const dashboardData = document.getElementById('dashContent');
+
+let dashInterval = null;
 
 // ---------- Helper: format relative time ----------
 function timeAgo(date) {
@@ -15,7 +16,6 @@ function timeAgo(date) {
   const now = new Date();
   const then = new Date(date);
   const diffSec = Math.floor((now - then) / 1000);
-
   if (diffSec < 10) return 'Just now';
   if (diffSec < 60) return `${diffSec}s ago`;
   const diffMin = Math.floor(diffSec / 60);
@@ -27,36 +27,54 @@ function timeAgo(date) {
   return then.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-// ---------- UI ----------
-dashBtn.addEventListener('click', () => {
+// ---------- Open / Close ----------
+function openDash() {
+  console.log('openDash called');
+  if (!modal) { console.error('dashModal not found'); return; }
   modal.classList.remove('hidden');
-  modal.classList.add('flex');
   fetchDashboard();
+  if (dashInterval) clearInterval(dashInterval);
   dashInterval = setInterval(fetchDashboard, 3000);
-});
+}
 
-closeBtn.addEventListener('click', () => {
+function closeDash() {
+  console.log('closeDash called');
+  if (!modal) return;
   modal.classList.add('hidden');
-  modal.classList.remove('flex');
-  clearInterval(dashInterval);
+  if (dashInterval) { clearInterval(dashInterval); dashInterval = null; }
+}
+
+// Attach to ALL dashboard buttons (desktop + mobile menu)
+const dashBtns = document.querySelectorAll('.js-dashboard');
+console.log('Found dashboard buttons:', dashBtns.length);
+dashBtns.forEach((btn, i) => {
+  console.log('Attaching click to button', i);
+  btn.addEventListener('click', openDash);
 });
 
-modal.addEventListener('click', (e) => {
-  if (e.target === modal) {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    clearInterval(dashInterval);
-  }
-});
+if (closeBtn) {
+  closeBtn.addEventListener('click', closeDash);
+} else {
+  console.warn('closeDash button not found');
+}
+
+if (modal) {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeDash();
+  });
+}
 
 // ---------- Fetch & render ----------
 async function fetchDashboard() {
+  console.log('fetchDashboard called');
+  if (!dashboardData) { console.error('dashContent not found'); return; }
   try {
     const res = await fetch('/status/all');
+    console.log('Fetch status:', res.status);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();   // object: { "1": {...}, "2": {...} }
+    const data = await res.json();
+    console.log('Fetch data keys:', Object.keys(data));
 
-    // Convert object to array with usernames
     const users = [];
     for (const [id, status] of Object.entries(data)) {
       if (status && typeof status === 'object') {
@@ -71,6 +89,7 @@ async function fetchDashboard() {
     let html = '';
     users.forEach(u => {
       const statusText = u.isOnline ? 'Online' : 'Offline';
+      const dotColor = u.isOnline ? '#22c55e' : '#d1d5db';
 
       let lastSeenDisplay;
       if (u.isOnline) {
@@ -83,34 +102,34 @@ async function fetchDashboard() {
       }
 
       html += `
-        <div class="mb-4 p-3 bg-white rounded-xl border border-gray-100">
-          <h3 class="text-lg font-semibold mb-1 text-blue-600 flex items-center gap-2">
-            <span class="inline-block w-2.5 h-2.5 rounded-full ${u.isOnline ? 'bg-green-500' : 'bg-gray-300'}"></span>
+        <div style="margin-bottom:1rem;padding:0.75rem;background:#fff;border-radius:0.75rem;border:1px solid #f3f4f6;">
+          <h3 style="font-size:1.05rem;font-weight:600;margin-bottom:0.25rem;color:#2563eb;display:flex;align-items:center;gap:0.5rem;">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${dotColor};"></span>
             ${u.username} – ${statusText}
           </h3>
-          <p class="text-sm text-gray-600 mb-1">Last seen: ${lastSeenDisplay}</p>
+          <p style="font-size:0.875rem;color:#4b5563;margin-bottom:0.25rem;">Last seen: ${lastSeenDisplay}</p>
       `;
 
       if (u.isTyping) {
         const since = u.typingUpdatedAt
           ? new Date(u.typingUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
           : 'unknown';
-        html += `<p class="text-pink-600 font-medium text-sm">Typing since: ${since}</p>`;
+        html += `<p style="color:#ec4899;font-weight:500;font-size:0.875rem;">Typing since: ${since}</p>`;
       }
 
-      if (u.currentLocation && u.currentLocation.city) {
-        const loc = u.currentLocation;
-        const mapLink = (loc.lat && loc.lng)
-          ? `https://www.google.com/maps?q=${loc.lat},${loc.lng}`
-          : null;
+      if (u.location && u.location.city) {
+        const loc = u.location;
+        const mapLink = (loc.lat && loc.lng) ? `https://www.google.com/maps?q=${loc.lat},${loc.lng}` : null;
         html += `
-          <div class="mt-2 p-2 bg-gray-50 rounded-lg text-sm space-y-1">
-            <p><i class="fas fa-map-marker-alt text-pink-500 w-4 inline-block"></i> ${loc.city}${loc.district ? ', ' + loc.district : ''}, ${loc.state}, ${loc.country}</p>
-            ${loc.isp ? `<p class="text-xs text-gray-500"><i class="fas fa-network-wired w-4 inline-block"></i> ${loc.isp}</p>` : ''}
-            ${mapLink ? `<p><a href="${mapLink}" target="_blank" class="text-pink-500 hover:underline text-xs"><i class="fas fa-external-link-alt w-4 inline-block"></i> View on map</a></p>` : ''}
-            ${loc.updatedAt ? `<p class="text-xs text-gray-400">Updated: ${new Date(loc.updatedAt).toLocaleString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>` : ''}
+          <div style="margin-top:0.5rem;padding:0.5rem;background:#f9fafb;border-radius:0.5rem;font-size:0.875rem;">
+            <p style="margin-bottom:0.25rem;">📍 ${loc.city}${loc.district ? ', ' + loc.district : ''}, ${loc.state}, ${loc.country}</p>
+            ${loc.isp ? `<p style="font-size:0.75rem;color:#6b7280;margin-bottom:0.25rem;">🌐 ${loc.isp}</p>` : ''}
+            ${mapLink ? `<p style="margin-bottom:0.25rem;"><a href="${mapLink}" target="_blank" style="color:#ec4899;text-decoration:none;font-size:0.75rem;">🔗 View on map</a></p>` : ''}
+            ${loc.updatedAt ? `<p style="font-size:0.75rem;color:#9ca3af;">Updated: ${new Date(loc.updatedAt).toLocaleString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>` : ''}
           </div>
         `;
+      } else if (u.location) {
+        html += `<p style="font-size:0.75rem;color:#9ca3af;margin-top:0.25rem;">📍 Location data incomplete</p>`;
       }
 
       if (u.lastSeen && !u.isOnline) {
@@ -120,7 +139,7 @@ async function fetchDashboard() {
             month: 'short', day: 'numeric', year: 'numeric',
             hour: '2-digit', minute: '2-digit', hour12: true
           });
-          html += `<p class="text-xs text-gray-400" title="${fullTime}">(${fullTime})</p>`;
+          html += `<p style="font-size:0.75rem;color:#9ca3af;">(${fullTime})</p>`;
         }
       }
 
@@ -128,15 +147,17 @@ async function fetchDashboard() {
     });
 
     if (users.length === 0) {
-      html = '<p class="text-gray-500 text-center py-8">No users found.</p>';
+      html = '<p style="color:#6b7280;text-align:center;padding:2rem 0;">No users found.</p>';
     }
 
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-    html += `<p class="text-xs text-gray-300 text-center mt-2">Updated ${now}</p>`;
+    html += `<p style="font-size:0.75rem;color:#d1d5db;text-align:center;margin-top:0.5rem;">Updated ${now}</p>`;
 
     dashboardData.innerHTML = html;
+    console.log('Dashboard rendered successfully');
 
   } catch (e) {
-    dashboardData.innerHTML = '<p class="text-red-500">Could not load dashboard data.</p>';
+    console.error('fetchDashboard error:', e);
+    dashboardData.innerHTML = '<p style="color:#dc2626;">Could not load dashboard data.</p>';
   }
 }

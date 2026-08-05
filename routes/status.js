@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const https = require('https');
-const mongoose = require('mongoose');                     // <-- new
+const mongoose = require('mongoose');
 const { setTyping, setOnline, setLocation } = require('../services/userStatusStore');
 
 // ---------- Helpers ----------
@@ -11,46 +11,59 @@ function getUserId(req) {
 }
 
 function getClientIp(req) {
-  return req.ip.replace(/^::ffff:/, '');
+  const forwarded = req.headers['x-forwarded-for'];
+  const raw = forwarded ? forwarded.split(',')[0].trim() : req.ip;
+  return raw.replace(/^::ffff:/, '');
+}
+
+function isPrivateIp(ip) {
+  return /^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|::1|fc00:|fe80:)/i.test(ip);
 }
 
 function fetchLocationByIp(ip) {
-  return new Promise((resolve, reject) => {
-    if (!ip || ip === '127.0.0.1' || ip === '::1') {
-      return resolve(null);
-    }
-    const url = `https://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,isp,org,as,query`;
+  return new Promise((resolve) => {
+    if (!ip || isPrivateIp(ip)) return resolve(null);
+    const url = `https://ipwho.is/${ip}`;
     https.get(url, (resp) => {
       let data = '';
       resp.on('data', chunk => data += chunk);
       resp.on('end', () => {
         try {
           const json = JSON.parse(data);
-          if (json.status === 'success') resolve(json);
-          else resolve(null);
+          if (json.success) {
+            resolve({
+              city: json.city,
+              regionName: json.region,
+              country: json.country,
+              lat: json.latitude,
+              lon: json.longitude,
+              district: '',
+              isp: json.connection?.isp || ''
+            });
+          } else {
+            resolve(null);
+          }
         } catch (e) {
           resolve(null);
         }
       });
-    }).on('error', (err) => resolve(null));
+    }).on('error', () => resolve(null));
   });
 }
 
 // ----- Online status -----
-router.post('/online', (req, res) => {
+router.post('/online', async (req, res) => {
   const userId = getUserId(req);
   if (!userId) return res.status(400).json({ success: false });
-  setOnline(userId, req.body.isOnline);
-  console.log(`✅ User ${userId} is now ${req.body.isOnline ? 'online' : 'offline'}`);
+  await setOnline(userId, req.body.isOnline);
   res.json({ success: true });
 });
 
 // ----- Typing status -----
-router.post('/typing', (req, res) => {
+router.post('/typing', async (req, res) => {
   const userId = getUserId(req);
   if (!userId) return res.status(400).json({ success: false });
-  setTyping(userId, req.body.isTyping);
-  console.log(`✅ ${req.session.user.username} typing: ${req.body.isTyping}`);
+  await setTyping(userId, req.body.isTyping);
   res.json({ success: true });
 });
 
@@ -78,7 +91,7 @@ router.post('/location', async (req, res) => {
       ip: clientIp,
       updatedAt: new Date()
     };
-    setLocation(userId, location);
+    await setLocation(userId, location);
     console.log(`✅ Location stored: ${geoData.city}, ${geoData.regionName}, ${geoData.country}`);
   } else {
     console.warn(`⚠️ Could not fetch location for IP ${clientIp}`);
@@ -87,14 +100,13 @@ router.post('/location', async (req, res) => {
 });
 
 // ============================================================
-//  🔥 NEW /all endpoint – always returns both users
+//  /all endpoint – always returns both users
 // ============================================================
 router.get('/all', async (req, res) => {
   if (req.session?.user?.id !== 1) return res.status(403).json({ error: 'Forbidden' });
 
-  console.log('🔵 /status/all called');
+  //console.log('🔵 /status/all called');
 
-  // Guaranteed fallback – always returned, even if DB is empty
   const result = {
     1: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null },
     2: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null }
@@ -111,7 +123,7 @@ router.get('/all', async (req, res) => {
 
       let online = false;
       if (doc.lastHeartbeat && doc.lastHeartbeat.getTime() > 0) {
-        online = (now - doc.lastHeartbeat.getTime()) < 15_000;
+        online = (now - doc.lastHeartbeat.getTime()) < 8_000;
       }
 
       let typing = false;
@@ -135,15 +147,14 @@ router.get('/all', async (req, res) => {
     console.error('❌ /status/all error:', err);
   }
 
-  console.log('📤 Sending:', JSON.stringify(result));
+  //console.log('📤 Sending:', JSON.stringify(result));
   res.json(result);
 });
 
-// ----- Legacy dashboard endpoint (adapted for object) -----
+// ----- Legacy dashboard endpoint -----
 router.get('/dashboard', async (req, res) => {
   if (req.session?.user?.id !== 1) return res.status(403).json({ error: 'Forbidden' });
 
-  // reuse the same logic as /all for consistency
   const result = {
     1: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null },
     2: { isOnline: false, lastSeen: new Date(0).toISOString(), isTyping: false, typingUpdatedAt: null, location: null }
@@ -160,7 +171,7 @@ router.get('/dashboard', async (req, res) => {
 
       let online = false;
       if (doc.lastHeartbeat && doc.lastHeartbeat.getTime() > 0) {
-        online = (now - doc.lastHeartbeat.getTime()) < 15_000;
+        online = (now - doc.lastHeartbeat.getTime()) < 8_000;
       }
 
       let typing = false;
@@ -184,7 +195,7 @@ router.get('/dashboard', async (req, res) => {
     console.error('❌ /dashboard error:', err);
   }
 
-  const manu = result[2];   // user 2 is manu
+  const manu = result[2];
   res.json({
     manuOnline: manu.isOnline,
     manuTyping: manu.isTyping,

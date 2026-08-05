@@ -4,7 +4,7 @@
 
 const me = window.USER;
 const POLL_MS = 1000;
-const HB_MS = 10000;
+const HB_MS = 5000;
 const SEND_TIMEOUT_MS = 10000;
 const MAX_TA_HEIGHT = 112;
 const MAX_NOTIF_IDS = 100;
@@ -667,7 +667,7 @@ if (me.id === 2) {
 }
 
 // ---- Emoji picker ----
-const EMOJIS = ['😀','😂','🤣','😍','😎','😢','😡','👍','👎','🎉','❤️','🔥','✅','⭐','💬','😜','🤔','🙏','💪','✨','😭','😅','😊','🥰','😘','😴','🤗','🤩','🫶','💔'];
+const EMOJIS = ['😀','😂','🤣','😍','😎','😢','😡','👍','👎','🎉','❤️','🔥','✅','⭐','💬','😜','🤔','🙏','✨','😭','😅','😊','🥰','😘','😴','🤗','🤩','🫶','💔'];
 const emojiPicker = $('emojiPicker');
 const emojiGrid = $('emojiGrid');
 const emojiBtn = $('emojiBtn');
@@ -736,13 +736,7 @@ $('cancelReply').addEventListener('click', cancelReply);
 
 document.querySelectorAll('.js-refresh').forEach(b => b.addEventListener('click', refresh));
 document.querySelectorAll('.js-clear').forEach(b => b.addEventListener('click', clearAll));
-document.querySelectorAll('.js-dashboard').forEach(b => b.addEventListener('click', () => $('dashModal')?.classList.remove('hidden')));
-$('closeDash')?.addEventListener('click', () => $('dashModal')?.classList.add('hidden'));
 
-// Modal backdrop click
-$('dashModal')?.addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) $('dashModal').classList.add('hidden');
-});
 
 // Mobile menu auto-close
 document.querySelectorAll('.nav-mobile .menu button, .nav-mobile .menu a').forEach(item => {

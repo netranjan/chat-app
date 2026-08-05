@@ -1,7 +1,7 @@
 // services/userStatusStore.js
 const mongoose = require('mongoose');
 
-const ONLINE_TIMEOUT_MS = 15_000;
+const ONLINE_TIMEOUT_MS = 8_000;
 const TYPING_EXPIRE_MS  = 5_000;
 const typingTimers = new Map();
 
@@ -24,7 +24,7 @@ async function setOnline(userId, isOnline) {
   if (isOnline) return touchActivity(userId);
   await col().updateOne(
     { userId },
-    { $set: { lastHeartbeat: new Date(0), isOnline: false } },
+    { $set: { lastHeartbeat: new Date(0), lastOnlineTime: new Date(), isOnline: false } },
     { upsert: true }
   );
 }
