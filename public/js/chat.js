@@ -1,689 +1,542 @@
 // ==========================
-//  Campusfify Chat – Client
+//  Campusfify Chat – Rebuilt
 // ==========================
 
-const currentUser = window.USER;
-const messagesMap = new Map();
-const messageElements = new Map();
+const me = window.USER;
+const POLL_MS = 1000;
+const HB_MS = 10000;
+const SEND_TIMEOUT_MS = 10000;
+const MAX_TA_HEIGHT = 112;
+const MAX_NOTIF_IDS = 100;
+
+// ---- State ----
+const msgs = new Map();
+const els = new Map();
+const sepEls = new Map();
 let lastSync = null;
 let replyToId = null;
-let tempMsgCounter = -1;
-let editingMessageId = null;
-let initialLoadComplete = false;
+let activeId = null;
+let editingId = null;
+let isSending = false;
+let sendAbort = null;
+let unread = 0;
+let autoScroll = true;
+let pollTimer = null;
+let hbTimer = null;
+let typingTimer = null;
 let typingInterval = null;
+let tempId = -1;
+let loaded = false;
+let inEdit = false;
+const notifIds = new Set();
+const pendingLikes = new Set();
 
-// Scroll state
-let shouldAutoScroll = true;
-let unreadCount = 0;
-let sentinel = null;
-let sentinelObserver = null;
+const $ = (sel) => document.getElementById(sel);
+const container = $('messages');
 
-// Popover state
-let activeMessageId = null;
-const popover = document.getElementById('actionPopover');
-
-// ---------- Notification permission (only for Rasuv) ----------
-if (currentUser.id === 1) {
-  document.body.addEventListener('click', function requestNotifPerm() {
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-    document.body.removeEventListener('click', requestNotifPerm);
-  }, { once: true });
-}
-
-// ---------- Time formatting ----------
-function formatTime(isoString) {
-  const date = new Date(isoString);
+// ---- Time ----
+function fmtTime(iso) {
+  const d = new Date(iso);
   const now = new Date();
-  const isToday = date.toDateString() === now.toDateString();
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  const isYesterday = date.toDateString() === yesterday.toDateString();
-  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-  if (isToday) return timeStr;
-  if (isYesterday) return `Yesterday at ${timeStr}`;
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) + ` at ${timeStr}`;
+  const t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  if (d.toDateString() === now.toDateString()) return t;
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (d.toDateString() === y.toDateString()) return `Yesterday at ${t}`;
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) + ` at ${t}`;
 }
 
-function getDateLabel(isoString) {
-  const date = new Date(isoString);
+function fmtDate(iso) {
+  const d = new Date(iso);
   const now = new Date();
-  const isToday = date.toDateString() === now.toDateString();
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  const isYesterday = date.toDateString() === yesterday.toDateString();
-  if (isToday) return 'Today';
-  if (isYesterday) return 'Yesterday';
-  return date.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
+  if (d.toDateString() === now.toDateString()) return 'Today';
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (d.toDateString() === y.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
-// ---------- Build HTML ----------
-function buildMessageHTML(msg) {
-  const isMine = msg.senderId === currentUser.id;
-  const senderName = msg.senderId === 1 ? 'rasuv' : 'manu';
+// ---- DOM builders ----
+function createMsgEl(m) {
+  const mine = m.senderId === me.id;
+  const sender = m.senderId === 1 ? 'rasuv' : 'manu';
 
-  const baseClasses = [
-    'message',
-    'max-w-[80%]',
-    'sm:max-w-[75%]',
-    'flex',
-    'flex-col',
-    'mb-0',
-    'cursor-pointer',
-    'origin-left',
-    isMine ? 'self-end items-end origin-right' : 'self-start items-start',
-  ].join(' ');
+  const msg = document.createElement('div');
+  msg.className = 'msg';
+  msg.dataset.id = m.id;
+  if (mine) msg.dataset.mine = '';
+  msg.dataset.sender = m.senderId;
 
-  let bubbleClasses = msg.senderId === 2
-    ? 'bg-gradient-to-br from-pink-50 to-pink-200 text-[#1a1a2e] rounded-2xl rounded-br-md'
-    : 'bg-gradient-to-br from-blue-50 to-blue-200 text-[#1a1a2e] rounded-2xl rounded-bl-md';
+  const senderEl = document.createElement('div');
+  senderEl.className = 'msg-sender';
+  senderEl.textContent = sender;
 
-  if (msg.deleted) {
-    bubbleClasses = 'bg-gray-100 text-gray-400 italic shadow-none rounded-2xl';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+
+  if (m.replyTo) {
+    const parent = msgs.get(m.replyTo);
+    const replyBox = document.createElement('div');
+    replyBox.className = 'msg-reply';
+    const strong = document.createElement('strong');
+    strong.textContent = '↩ ' + (parent ? (parent.senderId === 1 ? 'rasuv' : 'manu') : 'unknown');
+    replyBox.appendChild(strong);
+    const preview = document.createElement('div');
+    preview.textContent = parent ? (parent.deleted ? '[deleted]' : parent.text) : '[not loaded]';
+    replyBox.appendChild(preview);
+    bubble.appendChild(replyBox);
   }
 
-  let replyHTML = '';
-  if (msg.replyTo) {
-    const parent = messagesMap.get(msg.replyTo);
-    const replySender = parent ? (parent.senderId === 1 ? 'rasuv' : 'manu') : 'unknown';
-    const previewText = parent
-      ? (parent.deleted ? '[Message deleted]' : parent.text)
-      : '[original message not loaded]';
-    replyHTML = `
-      <div class="text-sm py-1.5 px-3 bg-black/5 rounded-xl mb-1.5 border-l-2 border-pink-500 text-gray-500">
-        <span class="text-xs font-semibold text-pink-500 block mb-0.5">↩ ${replySender}</span>
-        ${previewText}
-      </div>`;
+  const text = document.createElement('div');
+  text.className = 'msg-text';
+  text.textContent = m.text;
+  bubble.appendChild(text);
+
+  const meta = document.createElement('div');
+  meta.className = 'msg-meta';
+
+  const time = document.createElement('time');
+  time.textContent = fmtTime(m.timestamp);
+  meta.appendChild(time);
+
+  if (m.edited) {
+    const edited = document.createElement('span');
+    edited.className = 'msg-edited';
+    edited.textContent = '(edited)';
+    meta.appendChild(edited);
   }
 
-  const likeCount = msg.likes ? msg.likes.length : 0;
-  const editedBadge = msg.edited ? '<span class="italic text-[10px] opacity-70 ml-1">(edited)</span>' : '';
-  const readReceipt = (currentUser.id === 1 && msg.senderId === 1)
-    ? (msg.readBy && msg.readBy.length > 0 ? '✓✓' : '✓')
-    : '';
-
-  const likeSection = likeCount > 0
-    ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/5 like-section">
-         <button class="like-btn text-pink-500 border-0 bg-transparent cursor-pointer text-lg p-1">❤️</button>
-         <span class="text-sm font-semibold text-gray-500 min-w-[18px] text-center like-count">${likeCount}</span>
-       </span>`
-    : '';
-
-  return `
-    <div class="${baseClasses}" data-id="${msg.id}">
-      <div class="text-xs font-semibold mb-0.5 text-gray-500">${senderName}</div>
-      <div class="px-3.5 py-2 ${bubbleClasses} shadow-sm hover:shadow-md transition-shadow text-base leading-snug">
-        ${replyHTML}
-        <div class="message-text-content text-base leading-snug">${msg.text}</div>
-        <div class="flex items-center justify-end gap-2 mt-1">
-          <span class="text-[11px] text-gray-500 message-time-span">${formatTime(msg.timestamp)}${editedBadge}</span>
-          ${readReceipt ? `<span class="text-[11px] text-gray-600 ml-1 read-receipt">${readReceipt}</span>` : ''}
-          ${likeSection}
-        </div>
-      </div>
-    </div>`;
-}
-
-// ---------- Update element in place ----------
-function updateMessageElement(el, msg) {
-  if (msg.id !== editingMessageId) {
-    const textDiv = el.querySelector('.message-text-content');
-    if (textDiv && textDiv.textContent !== msg.text) {
-      textDiv.textContent = msg.text;
-    }
+  if (me.id === 1 && mine) {
+    const read = document.createElement('span');
+    read.className = 'msg-read';
+    read.textContent = (m.readBy || []).length > 0 ? '✓✓' : '✓';
+    meta.appendChild(read);
   }
 
-  const timeSpan = el.querySelector('.message-time-span');
-  if (timeSpan) {
-    const newTimeHTML = formatTime(msg.timestamp) + (msg.edited ? '<span class="italic text-[10px] opacity-70 ml-1">(edited)</span>' : '');
-    if (timeSpan.innerHTML !== newTimeHTML) timeSpan.innerHTML = newTimeHTML;
+  if (m.likes?.length) {
+    const likeBtn = document.createElement('button');
+    likeBtn.type = 'button';
+    likeBtn.className = 'msg-like';
+    likeBtn.innerHTML = `❤️ <span>${m.likes.length}</span>`;
+    meta.appendChild(likeBtn);
   }
+  bubble.appendChild(meta);
 
-  if (currentUser.id === 1 && msg.senderId === 1) {
-    let readEl = el.querySelector('.read-receipt');
-    const readText = msg.readBy && msg.readBy.length > 0 ? '✓✓' : '✓';
-    if (readEl) {
-      if (readEl.textContent !== readText) readEl.textContent = readText;
-    } else {
-      const footer = el.querySelector('.flex.items-center.justify-end');
-      if (footer) {
-        const span = document.createElement('span');
-        span.className = 'text-[11px] text-gray-600 ml-1 read-receipt';
-        span.textContent = readText;
-        footer.appendChild(span);
-      }
-    }
+  const actions = document.createElement('div');
+  actions.className = 'msg-actions';
+  const defs = [
+    { cls: 'act-like', text: '❤️ Like', cb: () => toggleLike(m.id) },
+    { cls: 'act-reply', text: '↩ Reply', cb: () => setReply(m.id) },
+  ];
+  if (mine) {
+    defs.push({ cls: 'act-edit', text: '✏️ Edit', cb: () => enterEdit(m.id) });
+    defs.push({ cls: 'act-del', text: '🗑 Delete', cb: () => del(m.id) });
   }
-
-  const likeSection = el.querySelector('.like-section');
-  const likeCountSpan = el.querySelector('.like-count');
-  const newCount = msg.likes ? msg.likes.length : 0;
-  if (newCount > 0) {
-    if (likeSection) {
-      likeSection.style.display = '';
-      if (likeCountSpan) likeCountSpan.textContent = newCount;
-    } else {
-      const footer = el.querySelector('.flex.items-center.justify-end');
-      if (footer) {
-        const span = document.createElement('span');
-        span.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/5 like-section';
-        span.innerHTML = `<button class="like-btn text-pink-500 border-0 bg-transparent cursor-pointer text-lg p-1">❤️</button>
-                          <span class="text-sm font-semibold text-gray-500 min-w-[18px] text-center like-count">${newCount}</span>`;
-        footer.appendChild(span);
-      }
-    }
-  } else {
-    if (likeSection) likeSection.style.display = 'none';
-  }
-}
-
-// ---------- Popover management ----------
-function showPopover(messageEl) {
-  const id = Number(messageEl.dataset.id);
-  activeMessageId = id;
-
-  const rect = messageEl.getBoundingClientRect();
-
-  popover.style.visibility = 'hidden';
-  popover.classList.remove('hidden');
-  popover.classList.add('flex');
-  const popHeight = popover.offsetHeight;
-  const popWidth = popover.offsetWidth;
-  popover.classList.add('hidden');
-  popover.classList.remove('flex');
-  popover.style.visibility = '';
-
-  let top = rect.top - popHeight - 8;
-  if (top < 8) {
-    top = rect.bottom + 8;
-  }
-
-  const maxTop = window.innerHeight - popHeight - 8;
-  if (top > maxTop) {
-    top = Math.max(8, rect.top - popHeight - 8);
-  }
-
-  let left = rect.left + (rect.width - popWidth) / 2;
-  if (left < 8) left = 8;
-  if (left + popWidth > window.innerWidth - 8) {
-    left = window.innerWidth - popWidth - 8;
-  }
-
-  popover.style.top = top + 'px';
-  popover.style.left = left + 'px';
-  popover.classList.remove('hidden');
-  popover.classList.add('flex');
-}
-
-function hidePopover() {
-  popover.classList.add('hidden');
-  popover.classList.remove('flex');
-  activeMessageId = null;
-}
-
-// ---------- Container event delegation ----------
-function setupContainerListener() {
-  const container = document.getElementById('messagesContainer');
-  if (!container || container.dataset.listenerSet) return;
-  container.dataset.listenerSet = 'true';
-
-  let touchJustHappened = false;
-
-  function handleInteraction(target) {
-    if (target.closest('#actionPopover button')) {
-      const btn = target.closest('button');
-      if (!activeMessageId) return;
-      if (btn.classList.contains('popover-like-btn')) {
-        toggleLike(activeMessageId);
-      } else if (btn.classList.contains('popover-reply-btn')) {
-        setReply(activeMessageId);
-      } else if (btn.classList.contains('popover-edit-btn')) {
-        enterEditMode(activeMessageId);
-      } else if (btn.classList.contains('popover-delete-btn')) {
-        deleteMessage(activeMessageId);
-      }
-      hidePopover();
-      return;
-    }
-
-    const heartBtn = target.closest('.like-btn');
-    if (heartBtn) {
-      const msgEl = heartBtn.closest('.message');
-      if (msgEl) {
-        const id = Number(msgEl.dataset.id);
-        heartBtn.classList.add('animate-[likePop_0.4s_ease]');
-        setTimeout(() => heartBtn.classList.remove('animate-[likePop_0.4s_ease]'), 400);
-        toggleLike(id);
-      }
-      return;
-    }
-
-    const messageEl = target.closest('.message');
-    if (messageEl) {
-      if (activeMessageId && activeMessageId === Number(messageEl.dataset.id)) {
-        hidePopover();
-      } else {
-        hidePopover();
-        showPopover(messageEl);
-      }
-      return;
-    }
-
-    hidePopover();
-  }
-
-  container.addEventListener('click', (e) => {
-    if (touchJustHappened) return;
-    handleInteraction(e.target);
+  defs.forEach(a => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = a.cls;
+    b.textContent = a.text;
+    b.addEventListener('click', (e) => { e.stopPropagation(); a.cb(); });
+    actions.appendChild(b);
   });
 
-  container.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    touchJustHappened = true;
-    setTimeout(() => { touchJustHappened = false; }, 300);
-    handleInteraction(e.target);
-  });
+  msg.appendChild(senderEl);
+  msg.appendChild(bubble);
+  msg.appendChild(actions);
 
-  container.addEventListener('dblclick', (e) => {
-    const messageEl = e.target.closest('.message');
-    if (messageEl) {
-      const id = Number(messageEl.dataset.id);
-      toggleLike(id);
-    }
-  });
-
-  container.addEventListener('scroll', () => {
-    hidePopover();
-  }, { passive: true });
-}
-
-// ---------- Per-message setup ----------
-function setupMessageElement(el, id) {
-  if (!el.dataset.animated) {
-    if (initialLoadComplete) {
-      el.classList.add('animate-[messageIn_0.35s_ease-out]');
-    }
-    el.dataset.animated = 'true';
-    el.addEventListener('animationend', () => {
-      el.classList.remove('animate-[messageIn_0.35s_ease-out]');
-    }, { once: true });
-  }
-
-  if (currentUser.id === 2) {
-    const msg = messagesMap.get(id);
-    if (msg && msg.senderId === 1 && !(msg.readBy || []).includes(2)) {
-      const observer = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting) {
-          fetch(`/messages/${id}/read`, { method: 'POST' });
-          observer.disconnect();
-        }
-      }, { threshold: 1.0 });
-      observer.observe(el);
-    }
-  }
-}
-
-// ---------- Sentinel management ----------
-function createSentinel() {
-  sentinel = document.createElement('div');
-  sentinel.id = 'scroll-sentinel';
-  sentinel.style.height = '1px';
-  sentinel.style.width = '100%';
-  sentinel.style.marginTop = '-1px';
-  return sentinel;
-}
-
-function ensureSentinel(container) {
-  if (!sentinel) sentinel = createSentinel();
-  container.appendChild(sentinel);
-}
-
-function setupSentinelObserver() {
-  const container = document.getElementById('messagesContainer');
-  if (!container) return;
-  if (sentinelObserver) sentinelObserver.disconnect();
-
-  sentinelObserver = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      shouldAutoScroll = entry.isIntersecting;
-      if (shouldAutoScroll) {
-        unreadCount = 0;
-        updateNewMessagesButton();
+  if (me.id === 2 && m.senderId === 1 && !(m.readBy || []).includes(2)) {
+    const io = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        fetch(`/messages/${m.id}/read`, { method: 'POST' }).catch(() => {});
+        io.disconnect();
       }
-    }
-  }, {
-    root: container,
-    threshold: 0.0,
-    rootMargin: '0px'
-  });
-  if (sentinel) sentinelObserver.observe(sentinel);
+    }, { threshold: 1.0 });
+    io.observe(msg);
+  }
+  return msg;
 }
 
-// ---------- Main reconciliation ----------
-function syncMessages(forceScroll = false) {
-  const container = document.getElementById('messagesContainer');
-  if (!container) return;
+function updateMsgEl(el, m) {
+  if (m.id === editingId) return;
+  el.classList.toggle('deleted', m.deleted);
 
-  const activeIds = Array.from(messagesMap.values())
+  const text = el.querySelector('.msg-text');
+  if (text && text.textContent !== m.text) text.textContent = m.text;
+
+  const time = el.querySelector('time');
+  if (time) time.textContent = fmtTime(m.timestamp);
+
+  let edited = el.querySelector('.msg-edited');
+  if (m.edited) {
+    if (!edited) {
+      edited = document.createElement('span');
+      edited.className = 'msg-edited';
+      edited.textContent = '(edited)';
+      const meta = el.querySelector('.msg-meta');
+      if (meta) meta.insertBefore(edited, meta.children[1] || null);
+    }
+  } else if (edited) {
+    edited.remove();
+  }
+
+  if (me.id === 1 && m.senderId === me.id) {
+    let read = el.querySelector('.msg-read');
+    const txt = (m.readBy || []).length > 0 ? '✓✓' : '✓';
+    if (!read) {
+      read = document.createElement('span');
+      read.className = 'msg-read';
+      const meta = el.querySelector('.msg-meta');
+      if (meta) meta.appendChild(read);
+    }
+    if (read.textContent !== txt) read.textContent = txt;
+  }
+
+  let like = el.querySelector('.msg-like');
+  if (m.likes?.length) {
+    if (!like) {
+      like = document.createElement('button');
+      like.type = 'button';
+      like.className = 'msg-like';
+      const meta = el.querySelector('.msg-meta');
+      if (meta) meta.appendChild(like);
+    }
+    like.innerHTML = `❤️ <span>${m.likes.length}</span>`;
+  } else if (like) {
+    like.remove();
+  }
+}
+
+// ---- Stable sync ----
+function sync(forceScroll = false) {
+  const list = [...msgs.values()]
     .filter(m => !m.deleted)
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-    .map(m => m.id);
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-  if (activeIds.length === 0) {
-    if (container.children.length !== 1 || !container.querySelector('.empty-state')) {
-      container.innerHTML = `<div class="empty-state text-center py-12 text-gray-500 text-base"><span class="text-5xl block mb-3 animate-bounce">💬</span><p>No messages yet.</p><p class="text-sm opacity-60 mt-1">Be the first to say hello!</p></div>`;
-      messageElements.clear();
+  if (!list.length) {
+    for (const [id, el] of els) {
+      if (activeId === id) hideActions();
+      if (editingId === id) exitEdit();
+      el.remove();
     }
-    ensureSentinel(container);
-    setupSentinelObserver();
+    els.clear();
+    for (const [, el] of sepEls) el.remove();
+    sepEls.clear();
+    $('emptyState').classList.remove('hidden');
     return;
   }
 
-  const emptyEl = container.querySelector('.empty-state');
-  if (emptyEl) emptyEl.remove();
+  $('emptyState').classList.add('hidden');
+  const activeIds = new Set(list.map(m => m.id));
 
-  container.querySelectorAll('.date-separator').forEach(el => el.remove());
-
-  for (const [id, el] of messageElements) {
-    if (!activeIds.includes(id)) {
+  for (const [id, el] of els) {
+    if (!activeIds.has(id)) {
+      if (editingId === id) exitEdit();
+      if (activeId === id) hideActions();
       el.remove();
-      messageElements.delete(id);
+      els.delete(id);
     }
   }
 
-  let lastDateLabel = null;
-  let previousEl = null;
+  const needed = new Set();
+  let prevLabel = null;
+  for (const m of list) {
+    const lab = fmtDate(m.timestamp);
+    if (lab !== prevLabel) { needed.add(lab); prevLabel = lab; }
+  }
+  for (const [lab, el] of sepEls) {
+    if (!needed.has(lab)) { el.remove(); sepEls.delete(lab); }
+  }
 
-  for (const id of activeIds) {
-    const msg = messagesMap.get(id);
-    if (!msg) continue;
+  let anchor = container.firstChild;
+  prevLabel = null;
 
-    const currentLabel = getDateLabel(msg.timestamp);
-    if (currentLabel !== lastDateLabel) {
-      const sep = document.createElement('div');
-      sep.className = 'date-separator flex justify-center my-4';
-      sep.innerHTML = `<span class="bg-black/5 text-gray-500 px-4 py-1 rounded-full text-xs font-medium">${currentLabel}</span>`;
-      if (previousEl) {
-        previousEl.insertAdjacentElement('afterend', sep);
-      } else {
-        container.insertBefore(sep, container.firstChild);
+  for (const m of list) {
+    const lab = fmtDate(m.timestamp);
+    if (lab !== prevLabel) {
+      let sep = sepEls.get(lab);
+      if (!sep) {
+        sep = document.createElement('div');
+        sep.className = 'date-sep';
+        sep.innerHTML = `<span>${lab}</span>`;
+        sepEls.set(lab, sep);
       }
-      previousEl = sep;
-      lastDateLabel = currentLabel;
+      if (anchor !== sep) container.insertBefore(sep, anchor);
+      anchor = sep.nextSibling;
+      prevLabel = lab;
     }
 
-    let el = messageElements.get(id);
+    let el = els.get(m.id);
     if (!el) {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = buildMessageHTML(msg);
-      el = tempDiv.firstElementChild;
-      setupMessageElement(el, id);
-      messageElements.set(id, el);
+      el = createMsgEl(m);
+      els.set(m.id, el);
     } else {
-      updateMessageElement(el, msg);
+      updateMsgEl(el, m);
     }
-
-    if (previousEl) {
-      if (previousEl.nextSibling !== el) {
-        container.insertBefore(el, previousEl.nextSibling);
-      }
-    } else {
-      if (container.firstChild !== el) {
-        container.insertBefore(el, container.firstChild);
-      }
-    }
-    previousEl = el;
+    if (anchor !== el) container.insertBefore(el, anchor);
+    anchor = el.nextSibling;
   }
 
-  ensureSentinel(container);
-  setupSentinelObserver();
-
-  if (forceScroll || shouldAutoScroll) {
-    container.scrollTop = container.scrollHeight;
-    unreadCount = 0;
-    updateNewMessagesButton();
-  } else {
-    updateNewMessagesButton();
-  }
+  if (forceScroll || autoScroll) { scrollToBottom(); unread = 0; }
+  updateNewMsgBtn();
 }
 
-// ---------- New messages button ----------
-function updateNewMessagesButton() {
-  const btn = document.getElementById('newMessagesBtn');
-  const countSpan = document.getElementById('newMsgCount');
-  if (!btn || !countSpan) return;
-
-  if (unreadCount > 0 && !shouldAutoScroll) {
-    btn.classList.remove('hidden');
-    btn.classList.add('flex');
-    countSpan.textContent = unreadCount;
-  } else {
-    btn.classList.add('hidden');
-    btn.classList.remove('flex');
-  }
+function scrollToBottom() {
+  container.scrollTop = container.scrollHeight;
 }
 
-// ---------- Optimistic send ----------
-async function sendMessage(text, replyTo) {
-  const tempId = tempMsgCounter--;
-  const tempMsg = {
-    id: tempId,
-    senderId: currentUser.id,
-    text,
-    timestamp: new Date().toISOString(),
-    edited: false,
-    deleted: false,
-    replyTo,
-    likes: [],
-    readBy: []
+// ---- Actions ----
+function showActions(id) {
+  hideActions();
+  activeId = id;
+  const el = els.get(id);
+  if (el) el.classList.add('active');
+}
+
+function hideActions() {
+  if (activeId == null) return;
+  const el = els.get(activeId);
+  if (el) el.classList.remove('active');
+  activeId = null;
+}
+
+// ---- Edit ----
+function enterEdit(id) {
+  const m = msgs.get(id);
+  if (!m || m.senderId !== me.id || m.deleted) return;
+  hideActions();
+  if (editingId !== null) exitEdit();
+  editingId = id;
+
+  const el = els.get(id);
+  const bubble = el.querySelector('.msg-bubble');
+  const text = bubble.querySelector('.msg-text');
+  text.style.display = 'none';
+
+  const box = document.createElement('div');
+  box.className = 'edit-box';
+
+  const ta = document.createElement('textarea');
+  ta.className = 'edit-ta';
+  ta.rows = 2;
+  ta.value = m.text;
+  ta.inputMode = 'text';
+  ta.autocomplete = 'off';
+
+  const row = document.createElement('div');
+  row.className = 'edit-row';
+
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.className = 'edit-save';
+  save.textContent = 'Save';
+
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'edit-cancel';
+  cancel.textContent = 'Cancel';
+
+  row.appendChild(save);
+  row.appendChild(cancel);
+  box.appendChild(ta);
+  box.appendChild(row);
+  bubble.appendChild(box);
+
+  requestAnimationFrame(() => {
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    ta.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+
+  save.addEventListener('click', () => {
+    const v = ta.value.trim();
+    exitEdit();
+    if (v) edit(id, v);
+  });
+  cancel.addEventListener('click', () => exitEdit());
+}
+
+function exitEdit() {
+  if (editingId == null) return;
+  const el = els.get(editingId);
+  if (el) {
+    const bubble = el.querySelector('.msg-bubble');
+    const box = bubble.querySelector('.edit-box');
+    if (box) box.remove();
+    const text = bubble.querySelector('.msg-text');
+    if (text) text.style.display = '';
+  }
+  editingId = null;
+}
+
+// ---- Reply ----
+function setReply(id) {
+  hideActions();
+  replyToId = id;
+  const m = msgs.get(id);
+  const txt = $('replyText');
+  if (m) txt.textContent = `Replying to ${m.senderId === 1 ? 'rasuv' : 'manu'}: ${m.deleted ? '[deleted]' : m.text}`;
+  else txt.textContent = 'Replying to unavailable message';
+  $('replyBar').classList.remove('hidden');
+}
+
+function cancelReply() {
+  replyToId = null;
+  $('replyBar').classList.add('hidden');
+}
+
+// ---- Mutations ----
+async function send(text, replyTo) {
+  if (isSending) return;
+  isSending = true;
+  const btn = $('sendBtn');
+  const ta = $('msgInput');
+  btn.disabled = true;
+  ta.disabled = true;
+  btn.setAttribute('aria-busy', 'true');
+  btn.textContent = '…';
+
+  const temp = {
+    id: tempId--, senderId: me.id, text, timestamp: new Date().toISOString(),
+    edited: false, deleted: false, replyTo, likes: [], readBy: []
   };
-  messagesMap.set(tempId, tempMsg);
-  syncMessages(true);
+  msgs.set(temp.id, temp);
+  sync(true);
+
+  const ctrl = new AbortController();
+  sendAbort = ctrl;
+  const to = setTimeout(() => ctrl.abort(), SEND_TIMEOUT_MS);
 
   try {
     const res = await fetch('/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, replyTo })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, replyTo }), signal: ctrl.signal
     });
+    clearTimeout(to);
     const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.message || 'Could not send message');
-    messagesMap.delete(tempId);
-    messagesMap.set(data.message.id, data.message);
-    syncMessages(true);
+    if (!res.ok || !data.success) throw new Error(data.message || 'Send failed');
+    msgs.delete(temp.id);
+    msgs.set(data.message.id, data.message);
+    sync(true);
   } catch (err) {
-    messagesMap.delete(tempId);
-    syncMessages(true);
-    alert(`Failed to send message:\n${err.message}`);
+    if (err.name !== 'AbortError') alert('Failed to send: ' + err.message);
+    msgs.delete(temp.id);
+    sync(true);
+  } finally {
+    isSending = false; sendAbort = null;
+    btn.disabled = false; ta.disabled = false;
+    btn.removeAttribute('aria-busy');
+    btn.textContent = 'Send';
   }
 }
 
-// ---------- Optimistic like ----------
 async function toggleLike(id) {
-  const msg = messagesMap.get(id);
-  if (!msg) return;
-  const originalLikes = [...(msg.likes || [])];
-  const idx = originalLikes.indexOf(currentUser.id);
-  if (idx === -1) msg.likes.push(currentUser.id);
-  else msg.likes.splice(idx, 1);
-  msg.likesUpdatedAt = new Date().toISOString();
-  syncMessages();
+  if (pendingLikes.has(id)) return;
+  pendingLikes.add(id);
+
+  const m = msgs.get(id);
+  if (!m) { pendingLikes.delete(id); return; }
+  const before = [...(m.likes || [])];
+  const idx = before.indexOf(me.id);
+  const after = [...before];
+  if (idx === -1) after.push(me.id); else after.splice(idx, 1);
+  m.likes = after;
+  m.likesUpdatedAt = new Date().toISOString();
+  sync();
+
+  const el = els.get(id);
+  const likeBtn = el?.querySelector('.msg-like');
+  if (likeBtn) {
+    likeBtn.classList.remove('liking');
+    void likeBtn.offsetWidth;
+    likeBtn.classList.add('liking');
+    setTimeout(() => likeBtn.classList.remove('liking'), 400);
+  }
 
   try {
     const res = await fetch(`/messages/${id}/like`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Like failed');
+    if (data.message) {
+      msgs.set(id, { ...m, ...data.message });
+      sync();
+    }
   } catch (err) {
-    msg.likes = originalLikes;
-    msg.likesUpdatedAt = null;
-    syncMessages();
-    alert(`Failed to like:\n${err.message}`);
+    m.likes = before; m.likesUpdatedAt = null; sync();
+    alert('Failed to like: ' + err.message);
+  } finally {
+    pendingLikes.delete(id);
   }
 }
 
-// ---------- Optimistic delete ----------
-async function deleteMessage(id) {
+async function edit(id, text) {
+  const m = msgs.get(id);
+  if (!m) return;
+  const oldText = m.text, oldEdited = m.edited;
+  m.text = text; m.edited = true; m.editedAt = new Date().toISOString();
+  sync();
+
+  try {
+    const res = await fetch(`/messages/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Edit failed');
+    if (data.message) {
+      msgs.set(id, { ...m, ...data.message });
+      sync();
+    }
+  } catch (err) {
+    m.text = oldText; m.edited = oldEdited; m.editedAt = null; sync();
+    alert('Failed to edit: ' + err.message);
+  }
+}
+
+async function del(id) {
   if (!confirm('Delete this message?')) return;
-  const msg = messagesMap.get(id);
-  if (!msg) return;
-  const wasDeleted = msg.deleted;
-  msg.deleted = true;
-  msg.edited = true;
-  msg.editedAt = new Date().toISOString();
-  syncMessages();
+  const m = msgs.get(id);
+  if (!m) return;
+  const was = m.deleted;
+  m.deleted = true; m.edited = true; m.editedAt = new Date().toISOString();
+  sync();
 
   try {
     const res = await fetch(`/messages/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Delete failed');
-  } catch (err) {
-    msg.deleted = wasDeleted;
-    msg.edited = false;
-    msg.editedAt = null;
-    syncMessages();
-    alert(`Failed to delete:\n${err.message}`);
-  }
-}
-
-// ---------- Optimistic edit ----------
-async function editMessage(id, newText) {
-  const msg = messagesMap.get(id);
-  if (!msg) return;
-  const originalText = msg.text;
-  const originalEdited = msg.edited;
-  msg.text = newText;
-  msg.edited = true;
-  msg.editedAt = new Date().toISOString();
-  syncMessages();
-
-  try {
-    const res = await fetch(`/messages/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: newText })
-    });
-    const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.message || 'Edit failed');
-  } catch (err) {
-    msg.text = originalText;
-    msg.edited = originalEdited;
-    msg.editedAt = null;
-    syncMessages();
-    alert(`Failed to edit:\n${err.message}`);
-  }
-}
-
-// ---------- Reply ----------
-function setReply(id) {
-  replyToId = id;
-  const parent = messagesMap.get(id);
-  const previewDiv = document.getElementById('replyPreview');
-  const replyText = document.getElementById('replyText');
-  if (!previewDiv || !replyText) return;
-
-  if (parent) {
-    replyText.textContent = `Replying to ${parent.senderId === 1 ? 'rasuv' : 'manu'}: ${parent.deleted ? '[deleted]' : parent.text}`;
-  } else {
-    replyText.textContent = `Replying to message (no longer available)`;
-  }
-  previewDiv.classList.remove('hidden');
-  previewDiv.classList.add('flex');
-}
-
-function cancelReply() {
-  replyToId = null;
-  const previewDiv = document.getElementById('replyPreview');
-  if (previewDiv) {
-    previewDiv.classList.add('hidden');
-    previewDiv.classList.remove('flex');
-  }
-}
-
-// ---------- Inline editing ----------
-function enterEditMode(id) {
-  const msg = messagesMap.get(id);
-  if (!msg || msg.senderId !== currentUser.id || msg.deleted) return;
-
-  if (editingMessageId !== null) editingMessageId = null;
-
-  const el = messageElements.get(id);
-  if (!el) return;
-  const textDiv = el.querySelector('.message-text-content');
-  if (!textDiv) return;
-
-  editingMessageId = id;
-
-  textDiv.innerHTML = `
-    <div class="flex flex-col gap-1">
-      <textarea id="editInput" class="w-full px-3 py-2 border-2 border-pink-500 rounded-xl bg-white text-base font-sans" onclick="event.stopPropagation()">${msg.text}</textarea>
-      <div class="flex gap-2 justify-end">
-        <button id="saveEdit" class="px-4 py-1 rounded-full text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition">Save</button>
-        <button id="cancelEdit" class="px-4 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition">Cancel</button>
-      </div>
-    </div>`;
-
-  document.getElementById('editInput').focus();
-
-  document.getElementById('saveEdit').onclick = async () => {
-    const newText = document.getElementById('editInput').value.trim();
-    editingMessageId = null;
-    if (newText) await editMessage(id, newText);
-    else syncMessages();
-  };
-
-  document.getElementById('cancelEdit').onclick = () => {
-    editingMessageId = null;
-    syncMessages();
-  };
-}
-
-// ---------- Typing helper with live duration ----------
-function updateTypingDuration(startTime) {
-  const typingText = document.getElementById('typingText');
-  if (!typingText) return;
-
-  const now = new Date();
-  const diff = Math.floor((now - new Date(startTime)) / 1000);
-  let durationStr;
-  if (diff < 5) {
-    durationStr = 'just now';
-  } else if (diff < 60) {
-    durationStr = `${diff}s ago`;
-  } else {
-    const mins = Math.floor(diff / 60);
-    durationStr = `${mins}m ago`;
-  }
-  typingText.textContent = `manu is typing… (${durationStr})`;
-}
-
-function showTypingIndicator(manuStatus) {
-  const typingDiv = document.getElementById('typingIndicator');
-  const typingText = document.getElementById('typingText');
-  if (!typingDiv || !typingText) return;
-
-  if (manuStatus && manuStatus.isTyping) {
-    typingDiv.classList.remove('hidden');
-    typingDiv.classList.add('flex');
-
-    if (typingInterval) clearInterval(typingInterval);
-
-    updateTypingDuration(manuStatus.typingUpdatedAt);
-
-    typingInterval = setInterval(() => {
-      updateTypingDuration(manuStatus.typingUpdatedAt);
-    }, 1000);
-  } else {
-    typingDiv.classList.add('hidden');
-    typingDiv.classList.remove('flex');
-    if (typingInterval) {
-      clearInterval(typingInterval);
-      typingInterval = null;
+    if (data.message) {
+      msgs.set(id, { ...m, ...data.message });
+      sync();
     }
+  } catch (err) {
+    m.deleted = was; m.edited = false; m.editedAt = null; sync();
+    alert('Failed to delete: ' + err.message);
   }
 }
 
-// ---------- Polling ----------
+// ---- Typing ----
+function showTyping(status) {
+  const el = $('typing');
+  const txt = $('typingText');
+  if (!el || !txt) return;
+  if (status?.isTyping) {
+    el.classList.remove('hidden');
+    if (typingInterval) clearInterval(typingInterval);
+    const start = new Date(status.typingUpdatedAt);
+    const tick = () => {
+      const s = Math.floor((Date.now() - start) / 1000);
+      let d = 'just now';
+      if (s >= 5 && s < 60) d = `${s}s ago`;
+      else if (s >= 60) d = `${Math.floor(s / 60)}m ago`;
+      txt.textContent = `manu is typing… (${d})`;
+    };
+    tick(); typingInterval = setInterval(tick, 1000);
+  } else {
+    el.classList.add('hidden');
+    if (typingInterval) { clearInterval(typingInterval); typingInterval = null; }
+  }
+}
+
+// ---- Polling ----
 async function poll() {
   try {
     const url = `/sse/poll?lastSync=${encodeURIComponent(lastSync || '')}`;
@@ -692,310 +545,271 @@ async function poll() {
     if (!data.success) return;
 
     lastSync = data.timestamp;
-    const newMessages = data.newMessages || [];
-    const editedMessages = data.editedMessages || [];
+    const incoming = [...(data.newMessages || []), ...(data.editedMessages || [])];
+    let added = 0;
+    const toNotify = [];
 
-    let trulyNewCount = 0;
-    const messagesForNotification = [];
+    for (const m of incoming) {
+      const ex = msgs.get(m.id);
+      const newer = !ex ||
+        new Date(m.editedAt || 0) > new Date(ex.editedAt || 0) ||
+        new Date(m.likesUpdatedAt || 0) > new Date(ex.likesUpdatedAt || 0);
+      if (!newer) continue;
+      if (!ex) { added++; if (m.senderId !== me.id) toNotify.push(m); }
+      msgs.set(m.id, m);
+    }
 
-    newMessages.forEach(m => {
-      const existing = messagesMap.get(m.id);
-      if (!existing ||
-          new Date(m.editedAt || 0) > new Date(existing.editedAt || 0) ||
-          new Date(m.likesUpdatedAt || 0) > new Date(existing.likesUpdatedAt || 0)) {
-        if (!existing) {
-          trulyNewCount++;
-          if (m.senderId !== currentUser.id) {
-            messagesForNotification.push(m);
-          }
+    sync(false);
+
+    // Recompute autoScroll after DOM update to detect if user is truly at bottom
+    autoScroll = container.scrollHeight - container.scrollTop - container.clientHeight < 40;
+    if (added > 0 && !autoScroll) unread += added;
+    if (autoScroll) { unread = 0; }
+    updateNewMsgBtn();
+
+    if (me.id === 1 && document.visibilityState === 'hidden' && Notification.permission === 'granted') {
+      for (const m of toNotify) {
+        if (notifIds.has(m.id)) continue;
+        notifIds.add(m.id);
+        if (notifIds.size > MAX_NOTIF_IDS) {
+          const first = notifIds.values().next().value;
+          notifIds.delete(first);
         }
-        messagesMap.set(m.id, m);
+        const sender = m.senderId === 1 ? 'rasuv' : 'manu';
+        new Notification(`New message from ${sender}`, { body: m.text.substring(0, 100), icon: '/favicon.ico' });
       }
-    });
-    editedMessages.forEach(m => {
-      const existing = messagesMap.get(m.id);
-      if (!existing ||
-          new Date(m.editedAt || 0) > new Date(existing.editedAt || 0) ||
-          new Date(m.likesUpdatedAt || 0) > new Date(existing.likesUpdatedAt || 0)) {
-        messagesMap.set(m.id, m);
-      }
-    });
-
-    if (currentUser.id === 1 && messagesForNotification.length > 0 &&
-        document.visibilityState === 'hidden' &&
-        Notification.permission === 'granted') {
-      const sender = messagesForNotification[0].senderId === 1 ? 'rasuv' : 'manu';
-      const body = messagesForNotification.length === 1
-        ? messagesForNotification[0].text.substring(0, 100)
-        : `${messagesForNotification.length} new messages`;
-      new Notification(`New message${messagesForNotification.length > 1 ? 's' : ''} from ${sender}`, {
-        body,
-        icon: '/favicon.ico'
-      });
     }
-
-    if (trulyNewCount > 0 && !shouldAutoScroll) {
-      unreadCount += trulyNewCount;
-    }
-
-    syncMessages(false);
-
-    if (currentUser.id === 1) {
-      showTypingIndicator(data.manuStatus);
-    }
-  } catch (err) {
-    // ignore
-  }
+    if (me.id === 1) showTyping(data.manuStatus);
+  } catch (e) { /* ignore */ }
 }
 
-// ========== Heartbeat – proper start/stop ==========
-const HEARTBEAT_INTERVAL_MS = 10_000;
-let heartbeatTimer = null;
-
-function sendHeartbeat(online = true) {
+// ---- Heartbeat ----
+function sendHb(online) {
   fetch('/status/online', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ isOnline: online })
   }).catch(() => {});
 }
 
-function startHeartbeat() {
-  if (heartbeatTimer) return;          // already running
-  sendHeartbeat(true);                 // immediate pulse
-  heartbeatTimer = setInterval(() => sendHeartbeat(true), HEARTBEAT_INTERVAL_MS);
+function startHb() {
+  if (hbTimer) return;
+  sendHb(true);
+  hbTimer = setInterval(() => sendHb(true), HB_MS);
 }
 
-function stopHeartbeat() {
-  if (heartbeatTimer) {
-    clearInterval(heartbeatTimer);
-    heartbeatTimer = null;
-    sendHeartbeat(false);              // tell server we're offline NOW
-  }
+function stopHb() {
+  if (!hbTimer) return;
+  clearInterval(hbTimer); hbTimer = null;
+  sendHb(false);
 }
 
-// Start immediately
-startHeartbeat();
-
-// Pause when tab is hidden, resume when visible
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    stopHeartbeat();
+    stopHb();
+    if (isSending && sendAbort) sendAbort.abort();
   } else {
-    startHeartbeat();
+    startHb();
   }
 });
 
-// When the page is about to unload (close tab / navigate away)
 window.addEventListener('beforeunload', () => {
-  // Use synchronous XMLHttpRequest – works during page unload
-  try {
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/status/online', false);   // false = synchronous
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.send(JSON.stringify({ isOnline: false }));
-  } catch (e) { /* ignore */ }
+  const payload = JSON.stringify({ isOnline: false });
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon('/status/online', new Blob([payload], { type: 'application/json' }));
+  } else {
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/status/online', false);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.send(payload);
+    } catch (e) {}
+  }
+});
+startHb();
+
+// ---- Composer ----
+const composer = $('composer');
+const msgInput = $('msgInput');
+
+composer.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (isSending) return;
+  const text = msgInput.value.trim();
+  if (!text) return;
+  send(text, replyToId);
+  msgInput.value = '';
+  msgInput.style.height = 'auto';
+  cancelReply();
 });
 
-// ---------- Typing indicator (only manu) ----------
-let typingTimeout;
-document.getElementById('messageInput').addEventListener('input', () => {
-  if (currentUser.id === 2) {
+msgInput.addEventListener('input', () => {
+  msgInput.style.height = 'auto';
+  const h = Math.min(msgInput.scrollHeight, MAX_TA_HEIGHT);
+  msgInput.style.height = h + 'px';
+  msgInput.style.overflowY = msgInput.scrollHeight > MAX_TA_HEIGHT ? 'auto' : 'hidden';
+});
+
+// Typing indicator (manu only)
+if (me.id === 2) {
+  msgInput.addEventListener('input', () => {
     fetch('/status/typing', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isTyping: true, typingTo: 1 })
-    });
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => {
+    }).catch(() => {});
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
       fetch('/status/typing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isTyping: false, typingTo: 1 })
-      });
+      }).catch(() => {});
     }, 2000);
-  }
+  });
+}
+
+// ---- Emoji picker ----
+const EMOJIS = ['😀','😂','🤣','😍','😎','😢','😡','👍','👎','🎉','❤️','🔥','✅','⭐','💬','😜','🤔','🙏','💪','✨','😭','😅','😊','🥰','😘','😴','🤗','🤩','🫶','💔'];
+const emojiPicker = $('emojiPicker');
+const emojiGrid = $('emojiGrid');
+const emojiBtn = $('emojiBtn');
+
+function buildEmoji() {
+  emojiGrid.innerHTML = '';
+  EMOJIS.forEach(em => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'emoji-item'; b.textContent = em;
+    b.addEventListener('click', () => { insertEmoji(em); hideEmoji(); });
+    emojiGrid.appendChild(b);
+  });
+}
+
+function insertEmoji(emoji) {
+  const s = msgInput.selectionStart, e = msgInput.selectionEnd, v = msgInput.value;
+  msgInput.value = v.slice(0, s) + emoji + v.slice(e);
+  msgInput.selectionStart = msgInput.selectionEnd = s + emoji.length;
+  msgInput.focus();
+  msgInput.dispatchEvent(new Event('input'));
+}
+
+function showEmoji() { emojiPicker.classList.remove('hidden'); }
+function hideEmoji() { emojiPicker.classList.add('hidden'); }
+
+emojiBtn.addEventListener('click', (e) => { e.stopPropagation(); emojiPicker.classList.contains('hidden') ? showEmoji() : hideEmoji(); });
+$('emojiClose').addEventListener('click', hideEmoji);
+document.addEventListener('click', (e) => { if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) hideEmoji(); });
+buildEmoji();
+
+// ---- Event delegation ----
+document.addEventListener('click', (e) => { inEdit = !!e.target.closest('.edit-box'); }, true);
+document.addEventListener('touchend', (e) => { inEdit = !!e.target.closest('.edit-box'); }, true);
+
+container.addEventListener('click', (e) => {
+  if (inEdit) return;
+  const heart = e.target.closest('.msg-like');
+  if (heart) { toggleLike(Number(heart.closest('.msg').dataset.id)); return; }
+  const msg = e.target.closest('.msg');
+  if (msg) { const id = Number(msg.dataset.id); activeId === id ? hideActions() : showActions(id); return; }
+  hideActions();
 });
 
-// ---------- Location (silent) ----------
-async function sendLocation() {
-  try {
-    await fetch('/status/location', { method: 'POST' });
-  } catch (e) {
-    console.error('Location update failed:', e);
-  }
+container.addEventListener('dblclick', (e) => {
+  if (inEdit) return;
+  const msg = e.target.closest('.msg');
+  if (msg) toggleLike(Number(msg.dataset.id));
+});
+
+container.addEventListener('scroll', () => {
+  autoScroll = container.scrollHeight - container.scrollTop - container.clientHeight < 40;
+  if (autoScroll) { unread = 0; updateNewMsgBtn(); }
+  hideActions();
+}, { passive: true });
+
+// ---- Buttons ----
+function updateNewMsgBtn() {
+  const btn = $('newMsgs');
+  if (!btn) return;
+  if (unread > 0 && !autoScroll) { btn.classList.remove('hidden'); $('newMsgCount').textContent = unread; }
+  else btn.classList.add('hidden');
 }
 
-if (currentUser.id === 2) {
-  sendLocation();
-  setInterval(sendLocation, 60000);
-}
+$('newMsgs').addEventListener('click', () => { autoScroll = true; scrollToBottom(); unread = 0; updateNewMsgBtn(); });
+$('cancelReply').addEventListener('click', cancelReply);
 
-// ---------- Initial load ----------
-async function loadInitial() {
+document.querySelectorAll('.js-refresh').forEach(b => b.addEventListener('click', refresh));
+document.querySelectorAll('.js-clear').forEach(b => b.addEventListener('click', clearAll));
+document.querySelectorAll('.js-dashboard').forEach(b => b.addEventListener('click', () => $('dashModal')?.classList.remove('hidden')));
+$('closeDash')?.addEventListener('click', () => $('dashModal')?.classList.add('hidden'));
+
+// Modal backdrop click
+$('dashModal')?.addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) $('dashModal').classList.add('hidden');
+});
+
+// Mobile menu auto-close
+document.querySelectorAll('.nav-mobile .menu button, .nav-mobile .menu a').forEach(item => {
+  item.addEventListener('click', () => {
+    const details = item.closest('.nav-mobile');
+    if (details) details.open = false;
+  });
+});
+
+async function refresh() {
+  const btns = document.querySelectorAll('.js-refresh');
+  btns.forEach(b => { b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; });
+  msgs.clear();
+  els.forEach(el => el.remove()); els.clear();
+  sepEls.forEach(el => el.remove()); sepEls.clear();
+  lastSync = null; unread = 0; editingId = null; activeId = null; autoScroll = true;
+  updateNewMsgBtn();
   try {
     const res = await fetch('/api/messages');
-    if (!res.ok) throw new Error('Could not load messages');
-    const messages = await res.json();
-    messages.forEach(m => messagesMap.set(m.id, m));
-
-    initialLoadComplete = false;
-    syncMessages(true);
-    initialLoadComplete = true;
-
-    const sorted = messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    lastSync = sorted.length > 0 ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
-
-    setupContainerListener();
-  } catch (err) {
-    console.error('Initial load error:', err);
-    lastSync = new Date().toISOString();
-    initialLoadComplete = true;
-  }
+    if (!res.ok) throw new Error('Server error');
+    const data = await res.json();
+    data.forEach(m => msgs.set(m.id, m));
+    sync(true);
+    const sorted = [...msgs.values()].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    lastSync = sorted.length ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
+  } catch (err) { alert('Refresh failed: ' + err.message); }
+  finally { btns.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh'; }); }
 }
 
-// ---------- Clear chat ----------
-document.getElementById('clearChatBtn')?.addEventListener('click', async () => {
+async function clearAll() {
   if (!confirm('Delete all messages for both users?')) return;
   try {
     const res = await fetch('/messages/all', { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Clear failed');
-    messagesMap.clear();
-    syncMessages(true);
-  } catch (err) {
-    alert(`Failed to clear chat:\n${err.message}`);
+    msgs.clear(); sync(true);
+  } catch (err) { alert('Clear failed: ' + err.message); }
+}
+
+// ---- Init ----
+async function init() {
+  if (me.id === 1 && 'Notification' in window && Notification.permission === 'default') {
+    document.body.addEventListener('click', function req() {
+      Notification.requestPermission();
+      document.body.removeEventListener('click', req);
+    }, { once: true });
   }
-});
-
-// ---------- New messages button ----------
-document.getElementById('newMessagesBtn')?.addEventListener('click', () => {
-  const container = document.getElementById('messagesContainer');
-  if (container) {
-    shouldAutoScroll = true;
-    container.scrollTop = container.scrollHeight;
-    unreadCount = 0;
-    updateNewMessagesButton();
-  }
-});
-
-// ---------- Manual refresh ----------
-async function refreshChat() {
-  const btn = document.getElementById('refreshChatBtn');
-  if (btn) {
-    btn.textContent = '⏳ Refreshing…';
-    btn.disabled = true;
-  }
-
-  messagesMap.clear();
-  messageElements.clear();
-  lastSync = null;
-  unreadCount = 0;
-  editingMessageId = null;
-  shouldAutoScroll = true;
-  updateNewMessagesButton();
-
-  const container = document.getElementById('messagesContainer');
-  if (container) container.innerHTML = '';
-
   try {
     const res = await fetch('/api/messages');
-    if (!res.ok) throw new Error('Server error while refreshing');
-    const messages = await res.json();
-    messages.forEach(m => messagesMap.set(m.id, m));
-    syncMessages(true);
-    const sorted = messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    lastSync = sorted.length > 0 ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
+    if (!res.ok) throw new Error('Load failed');
+    const data = await res.json();
+    data.forEach(m => msgs.set(m.id, m));
+    sync(true);
+    const sorted = [...msgs.values()].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    lastSync = sorted.length ? sorted[sorted.length - 1].timestamp : new Date().toISOString();
+    loaded = true;
   } catch (err) {
     console.error(err);
-    alert(`Failed to refresh chat:\n${err.message}`);
-  } finally {
-    if (btn) {
-      btn.innerHTML = '<i class="fas fa-sync-alt"></i> <span>Refresh</span>';
-      btn.disabled = false;
-    }
+    lastSync = new Date().toISOString();
+    loaded = true;
   }
-}
-document.getElementById('refreshChatBtn')?.addEventListener('click', refreshChat);
-
-// ---------- Send message ----------
-document.getElementById('messageForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const input = document.getElementById('messageInput');
-  const text = input.value.trim();
-  if (!text) return;
-  sendMessage(text, replyToId);
-  input.value = '';
-  cancelReply();
-});
-
-document.getElementById('cancelReply')?.addEventListener('click', cancelReply);
-
-// ========================
-//  EMOJI PICKER (NEW)
-// ========================
-const emojiBtn = document.getElementById('emojiBtn');
-const messageInput = document.getElementById('messageInput');
-const emojiPicker = document.getElementById('emojiPicker');
-
-const EMOJI_LIST = [
-  '😀','😂','🤣','😍','😎','😢','😡','👍','👎','🎉',
-  '❤️','🔥','✅','⭐','💬','😜','🤔','🙏','💪','✨',
-  '😭','😅','😊','🥰','😘','😴','🤗','🤩','🫶','💔'
-];
-
-function buildEmojiPicker() {
-  emojiPicker.innerHTML = EMOJI_LIST.map(emoji =>
-    `<button type="button" class="emoji-item text-xl hover:bg-gray-100 rounded-lg p-1 transition">${emoji}</button>`
-  ).join('');
-
-  // Insert emoji at cursor when clicked
-  emojiPicker.addEventListener('click', (e) => {
-    const btn = e.target.closest('.emoji-item');
-    if (!btn) return;
-    insertAtCursor(messageInput, btn.textContent);
-    messageInput.focus();
-    hideEmojiPicker();
-  });
+  pollTimer = setInterval(poll, POLL_MS);
 }
 
-function insertAtCursor(textarea, text) {
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  const before = textarea.value.substring(0, start);
-  const after = textarea.value.substring(end);
-  textarea.value = before + text + after;
-  textarea.selectionStart = textarea.selectionEnd = start + text.length;
+if (me.id === 2) {
+  fetch('/status/location', { method: 'POST' }).catch(() => {});
+  setInterval(() => fetch('/status/location', { method: 'POST' }).catch(() => {}), 60000);
 }
 
-function showEmojiPicker() {
-  emojiPicker.classList.remove('hidden');
-  emojiPicker.classList.add('block');
-}
-
-function hideEmojiPicker() {
-  emojiPicker.classList.add('hidden');
-  emojiPicker.classList.remove('block');
-}
-
-emojiBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  if (emojiPicker.classList.contains('hidden')) {
-    showEmojiPicker();
-  } else {
-    hideEmojiPicker();
-  }
-});
-
-document.addEventListener('click', (e) => {
-  if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) {
-    hideEmojiPicker();
-  }
-});
-
-buildEmojiPicker();
-
-// ---------- Start everything ----------
-loadInitial().finally(() => {
-  setInterval(poll, 1000);
-});
+init();
