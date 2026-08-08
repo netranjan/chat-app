@@ -1,5 +1,6 @@
 /* ============================================================
-   tiny-chat.css – Semantic components, mobile-first, zero-JS UI
+   tiny-chat.css – Romantic Edition 💕
+   Semantic components, mobile-first, zero-JS UI
    ============================================================ */
 
 *, *::before, *::after {
@@ -24,7 +25,7 @@ textarea,
 /* ----- Scrollbar (WebKit + Firefox) ----- */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #d0d4dc transparent;
+  scrollbar-color: #f9a8d4 transparent;
 }
 
 ::-webkit-scrollbar {
@@ -36,12 +37,12 @@ textarea,
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d0d4dc;
+  background: #f9a8d4;
   border-radius: 20px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #b0b8c4;
+  background: #f472b6;
 }
 
 /* ----- Layout shell ----- */
@@ -53,8 +54,22 @@ body {
   height: 100dvh;
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #f5f7fb;
+  background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 30%, #fdf2f8 70%, #faf5ff 100%);
+  background-attachment: fixed;
   color: #1a1a2e;
+}
+
+/* Subtle romantic background pattern */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(244, 114, 182, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 50% 90%, rgba(251, 113, 133, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* ----- Header ----- */
@@ -63,24 +78,27 @@ body {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(225, 29, 72, 0.1);
   min-height: 56px;
   flex-shrink: 0;
   z-index: 10;
+  position: relative;
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   color: white;
   font-weight: 600;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #ec4899, #be185d);
+  background: linear-gradient(135deg, #fb7185, #e11d48);
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.25);
+  font-size: 1.1rem;
 }
 
 .title {
@@ -90,6 +108,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #881337;
 }
 
 .icon-btn {
@@ -98,16 +117,17 @@ body {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: #6b7280;
+  color: #be123c;
   background: transparent;
   border: none;
   font-size: 1.25rem;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.15s;
 }
 
 .icon-btn:hover {
-  background: #f3f4f6;
+  background: #ffe4e6;
+  transform: scale(1.05);
 }
 
 .btn {
@@ -117,9 +137,9 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  background: #eff6ff;
-  color: #2563eb;
-  transition: background 0.15s;
+  background: #fff1f2;
+  color: #be123c;
+  transition: background 0.15s, transform 0.1s;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -128,16 +148,17 @@ body {
 }
 
 .btn:hover {
-  background: #dbeafe;
+  background: #ffe4e6;
+  transform: translateY(-1px);
 }
 
 .btn.danger {
-  background: #fef2f2;
-  color: #dc2626;
+  background: #fff1f2;
+  color: #e11d48;
 }
 
 .btn.danger:hover {
-  background: #fee2e2;
+  background: #ffe4e6;
 }
 
 .nav-desktop {
@@ -164,15 +185,17 @@ body {
   position: absolute;
   right: 0;
   top: calc(100% + 4px);
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
   border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(225, 29, 72, 0.12);
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   min-width: 140px;
   z-index: 30;
+  border: 1px solid rgba(225, 29, 72, 0.08);
 }
 
 @media (min-width: 640px) {
@@ -195,12 +218,13 @@ body {
   gap: 2px;
   position: relative;
   min-height: 0;
+  z-index: 1;
 }
 
 .empty {
   text-align: center;
   padding: 3rem 1rem;
-  color: #9ca3af;
+  color: #f472b6;
 }
 
 .empty.hidden {
@@ -208,9 +232,15 @@ body {
 }
 
 .empty span {
-  font-size: 3rem;
+  font-size: 3.5rem;
   display: block;
   margin-bottom: 0.5rem;
+  animation: gentleFloat 3s ease-in-out infinite;
+}
+
+.empty p {
+  color: #be123c;
+  font-weight: 500;
 }
 
 /* ----- Date separator ----- */
@@ -221,12 +251,13 @@ body {
 }
 
 .date-sep span {
-  background: rgba(0, 0, 0, 0.05);
-  color: #6b7280;
-  padding: 0.25rem 1rem;
+  background: rgba(225, 29, 72, 0.08);
+  color: #be123c;
+  padding: 0.35rem 1.25rem;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 /* ----- Message bubble ----- */
@@ -236,7 +267,7 @@ body {
   max-width: 80%;
   position: relative;
   padding-bottom: 2rem;
-  animation: msgIn 0.3s ease;
+  animation: msgIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @media (min-width: 640px) {
@@ -257,31 +288,35 @@ body {
 
 .msg-bubble {
   padding: 0.75rem 1rem;
-  border-radius: 1rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   position: relative;
   cursor: pointer;
-  transition: box-shadow 0.15s;
+  transition: box-shadow 0.2s, transform 0.2s;
 }
 
+/* You (Sender 1) – Warm Rose */
 .msg[data-sender="1"] .msg-bubble {
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  border-bottom-left-radius: 0.25rem;
+  background: linear-gradient(135deg, #ffe4e6, #fecdd3);
+  border-bottom-left-radius: 0.35rem;
+  color: #881337;
 }
 
+/* Girlfriend (Sender 2) – Soft Lavender Blush */
 .msg[data-sender="2"] .msg-bubble {
-  background: linear-gradient(135deg, #fdf2f8, #fce7f3);
-  border-bottom-right-radius: 0.25rem;
+  background: linear-gradient(135deg, #fae8ff, #f5d0fe);
+  border-bottom-right-radius: 0.35rem;
+  color: #701a75;
 }
 
 .msg[data-mine] .msg-bubble {
-  border-bottom-left-radius: 1rem;
-  border-bottom-right-radius: 0.25rem;
+  border-bottom-left-radius: 1.25rem;
+  border-bottom-right-radius: 0.35rem;
 }
 
 .msg:not([data-mine]) .msg-bubble {
-  border-bottom-right-radius: 1rem;
-  border-bottom-left-radius: 0.25rem;
+  border-bottom-right-radius: 1.25rem;
+  border-bottom-left-radius: 0.35rem;
 }
 
 .msg.deleted .msg-bubble {
@@ -292,28 +327,30 @@ body {
 }
 
 .msg-bubble:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.12);
+  transform: translateY(-1px);
 }
 
 .msg-sender {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
+  color: #be123c;
   margin-bottom: 0.25rem;
+  opacity: 0.8;
 }
 
 .msg-reply {
   font-size: 0.875rem;
   padding: 0.375rem 0.75rem;
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.5);
   border-radius: 0.75rem;
   margin-bottom: 0.5rem;
-  border-left: 2px solid #ec4899;
-  color: #6b7280;
+  border-left: 3px solid #e11d48;
+  color: #881337;
 }
 
 .msg-reply strong {
-  color: #ec4899;
+  color: #e11d48;
   font-size: 0.75rem;
   display: block;
   margin-bottom: 0.125rem;
@@ -336,24 +373,24 @@ body {
 
 .msg-meta time {
   font-size: 0.7rem;
-  color: #9ca3af;
+  color: #f472b6;
 }
 
 .msg-edited {
   font-size: 0.65rem;
-  color: #9ca3af;
+  color: #f472b6;
   font-style: italic;
 }
 
 .msg-read {
   font-size: 0.7rem;
-  color: #9ca3af;
+  color: #f472b6;
 }
 
 .msg-like {
   font-size: 0.875rem;
-  color: #ec4899;
-  background: rgba(0, 0, 0, 0.04);
+  color: #e11d48;
+  background: rgba(255, 255, 255, 0.6);
   padding: 0.125rem 0.5rem;
   border-radius: 999px;
   border: none;
@@ -369,10 +406,10 @@ body {
 }
 
 .msg-like.liking {
-  animation: likePop 0.4s ease;
+  animation: heartPop 0.5s ease;
 }
 
-/* ----- Inline actions (replaces popover) ----- */
+/* ----- Inline actions ----- */
 .msg-actions {
   position: absolute;
   display: none;
@@ -399,8 +436,9 @@ body {
   border-radius: 0.75rem;
   border: none;
   font-size: 0.8rem;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.1);
   cursor: pointer;
   transition: transform 0.1s, background 0.15s;
   white-space: nowrap;
@@ -414,15 +452,15 @@ body {
 }
 
 .msg-actions .act-like {
-  color: #ec4899;
+  color: #e11d48;
 }
 
 .msg-actions .act-reply {
-  color: #2563eb;
+  color: #be123c;
 }
 
 .msg-actions .act-edit {
-  color: #d97706;
+  color: #c2410c;
 }
 
 .msg-actions .act-del {
@@ -439,7 +477,7 @@ body {
 .edit-ta {
   width: 100%;
   padding: 0.5rem;
-  border: 2px solid #ec4899;
+  border: 2px solid #fb7185;
   border-radius: 0.75rem;
   font-family: inherit;
   font-size: 1rem;
@@ -465,13 +503,13 @@ body {
 }
 
 .edit-save {
-  background: #2563eb;
+  background: linear-gradient(135deg, #fb7185, #e11d48);
   color: white;
 }
 
 .edit-cancel {
-  background: #f3f4f6;
-  color: #4b5563;
+  background: #fff1f2;
+  color: #be123c;
 }
 
 /* ----- Typing indicator ----- */
@@ -481,8 +519,9 @@ body {
   gap: 0.5rem;
   padding: 0.25rem 1rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #be123c;
   flex-shrink: 0;
+  z-index: 1;
 }
 
 .typing.hidden {
@@ -493,7 +532,7 @@ body {
   display: inline-block;
   width: 6px;
   height: 6px;
-  background: #ec4899;
+  background: #fb7185;
   border-radius: 50%;
   animation: bounce 1.4s infinite ease-in-out both;
 }
@@ -512,10 +551,11 @@ body {
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(4px);
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(225, 29, 72, 0.08);
   flex-shrink: 0;
+  z-index: 1;
 }
 
 .reply-bar.hidden {
@@ -525,11 +565,11 @@ body {
 .reply-bar span {
   flex: 1;
   font-size: 0.875rem;
-  color: #6b7280;
-  background: #f9fafb;
+  color: #881337;
+  background: #fff1f2;
   padding: 0.5rem 0.75rem;
   border-radius: 0.75rem;
-  border-left: 3px solid #ec4899;
+  border-left: 3px solid #e11d48;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -541,7 +581,7 @@ body {
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: #be123c;
   font-size: 1.25rem;
   cursor: pointer;
   transition: color 0.15s, transform 0.15s;
@@ -550,7 +590,7 @@ body {
 }
 
 .reply-bar button:hover {
-  color: #dc2626;
+  color: #e11d48;
   transform: rotate(90deg);
 }
 
@@ -561,10 +601,12 @@ body {
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
-  background: white;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(225, 29, 72, 0.08);
   flex-shrink: 0;
   position: relative;
+  z-index: 1;
 }
 
 .input-wrap {
@@ -572,7 +614,7 @@ body {
   position: relative;
   display: flex;
   align-items: center;
-  background: #f3f4f6;
+  background: #fff1f2;
   border-radius: 999px;
   padding-left: 0.5rem;
   border: 1px solid transparent;
@@ -581,8 +623,8 @@ body {
 
 .input-wrap:focus-within {
   background: white;
-  border-color: #ec4899;
-  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.08);
+  border-color: #fb7185;
+  box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.12);
 }
 
 .input-wrap textarea {
@@ -596,17 +638,22 @@ body {
   line-height: 1.5;
   max-height: 112px;
   outline: none;
+  color: #881337;
+}
+
+.input-wrap textarea::placeholder {
+  color: #f472b6;
 }
 
 .send-btn {
   padding: 0.625rem 1.25rem;
   border-radius: 999px;
   border: none;
-  background: linear-gradient(135deg, #ec4899, #be185d);
+  background: linear-gradient(135deg, #fb7185, #e11d48);
   color: white;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 6px rgba(236, 72, 153, 0.2);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
   transition: transform 0.1s, filter 0.1s, opacity 0.15s;
   min-height: 40px;
 }
@@ -623,16 +670,16 @@ body {
   cursor: not-allowed;
 }
 
-/* ----- Emoji picker (card, responsive) ----- */
+/* ----- Emoji picker ----- */
 .emoji-picker {
   position: absolute;
   bottom: calc(100% + 8px);
   left: 0.5rem;
   right: 0.5rem;
-  background: white;
+  background: rgba(255, 255, 255, 0.98);
   border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 25px rgba(225, 29, 72, 0.12);
+  border: 1px solid #fce7f3;
   z-index: 20;
   max-height: 260px;
   display: flex;
@@ -649,15 +696,16 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid #ffe4e6;
   font-weight: 600;
   font-size: 0.875rem;
+  color: #be123c;
 }
 
 .emoji-header button {
   background: transparent;
   border: none;
-  color: #9ca3af;
+  color: #fb7185;
   cursor: pointer;
   font-size: 1rem;
   width: 32px;
@@ -669,7 +717,7 @@ body {
 }
 
 .emoji-header button:hover {
-  background: #f3f4f6;
+  background: #fff1f2;
 }
 
 .emoji-grid {
@@ -688,14 +736,15 @@ body {
   border-radius: 0.5rem;
   font-size: 1.25rem;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background 0.1s, transform 0.1s;
   border: none;
   background: transparent;
 }
 
 .emoji-item:hover,
 .emoji-item:active {
-  background: #f3f4f6;
+  background: #fff1f2;
+  transform: scale(1.15);
 }
 
 @media (max-width: 400px) {
@@ -708,8 +757,8 @@ body {
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(4px);
+  background: rgba(88, 28, 49, 0.35);
+  backdrop-filter: blur(6px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -730,8 +779,9 @@ body {
   max-height: 80vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 40px rgba(225, 29, 72, 0.15);
   animation: modalIn 0.3s ease;
+  border: 1px solid #ffe4e6;
 }
 
 .modal-close {
@@ -742,18 +792,19 @@ body {
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: #fff1f2;
+  color: #be123c;
   font-size: 1.25rem;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
   display: grid;
   place-items: center;
 }
 
 .modal-close:hover {
-  background: #fee2e2;
-  color: #dc2626;
+  background: #ffe4e6;
+  color: #e11d48;
+  transform: rotate(90deg);
 }
 
 /* ----- New messages button ----- */
@@ -761,13 +812,13 @@ body {
   position: fixed;
   bottom: 5.5rem;
   right: 1rem;
-  background: #22c55e;
+  background: linear-gradient(135deg, #fb7185, #e11d48);
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 999px;
   font-weight: 600;
   font-size: 0.875rem;
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
   border: none;
   cursor: pointer;
   z-index: 40;
@@ -786,7 +837,7 @@ body {
 @keyframes msgIn {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.98);
+    transform: translateY(12px) scale(0.96);
   }
 
   to {
@@ -795,13 +846,17 @@ body {
   }
 }
 
-@keyframes likePop {
+@keyframes heartPop {
   0% {
     transform: scale(1);
   }
 
-  40% {
-    transform: scale(1.35);
+  30% {
+    transform: scale(1.5);
+  }
+
+  60% {
+    transform: scale(0.9);
   }
 
   100% {
@@ -831,12 +886,23 @@ body {
   }
 }
 
+@keyframes gentleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
 /* ----- Reduced motion ----- */
 @media (prefers-reduced-motion: reduce) {
 
   .msg,
   .modal-box,
-  .msg-like {
+  .msg-like,
+  .empty span {
     animation: none !important;
   }
 }
